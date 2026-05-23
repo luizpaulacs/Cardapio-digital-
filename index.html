@@ -1,0 +1,283 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🍔 Cardápio com Carrinho de Compras</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', system-ui, sans-serif;
+            background-color: #f7f9fc;
+            margin: 0;
+            padding: 20px;
+            color: #333;
+        }
+        h1 { text-align: center; margin-bottom: 30px; }
+        
+        /* Layout dividido: Cardápio na esquerda (70%) e Carrinho na direita (30%) */
+        .layout-principal {
+            display: flex;
+            max-width: 1200px;
+            margin: 0 auto;
+            gap: 30px;
+        }
+        .secao-cardapio {
+            flex: 7;
+        }
+        .secao-carrinho {
+            flex: 3;
+            background: white;
+            padding: 20px;
+            border-radius: 16px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+            height: fit-content;
+            position: sticky;
+            top: 20px;
+        }
+
+        /* Grid de Produtos */
+        .container-cardapio {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+            gap: 20px;
+        }
+        .card-produto {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+        }
+        .card-produto img { width: 100%; height: 140px; object-fit: cover; }
+        .info { padding: 12px; }
+        .info h3 { margin: 0 0 5px 0; font-size: 16px; }
+        .info p { margin: 0 0 10px 0; font-size: 12px; color: #666; }
+        .preco { font-weight: bold; color: #e67e22; margin-bottom: 10px; }
+        
+        .btn {
+            border: none; padding: 10px; border-radius: 6px; cursor: pointer;
+            font-weight: bold; width: 100%; transition: background 0.2s;
+        }
+        .btn-add { background-color: #2ecc71; color: white; }
+        .btn-add:hover { background-color: #27ae60; }
+        .btn-pedido { background-color: #e67e22; color: white; font-size: 16px; margin-top: 15px; }
+        .btn-pedido:hover { background-color: #d35400; }
+        .btn-pedido:disabled { background-color: #bdc3c7; cursor: not-allowed; }
+
+        /* Estilos do Carrinho */
+        .item-carrinho {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid #eee;
+            padding: 10px 0;
+            font-size: 14px;
+        }
+        .total-carrinho {
+            margin-top: 20px;
+            font-size: 18px;
+            font-weight: bold;
+            display: flex;
+            justify-content: space-between;
+        }
+        .input-cliente {
+            width: 100%; padding: 8px; margin-top: 8px; border: 1px solid #ccc;
+            border-radius: 4px; box-sizing: border-box;
+        }
+    </style>
+</head>
+<body>
+
+    <h1>🍔 Nosso Cardápio</h1>
+    
+    <div class="layout-principal">
+        <div class="secao-cardapio">
+            <div id="cardapio" class="container-cardapio">
+                <p>Carregando cardápio...</p>
+            </div>
+        </div>
+
+        <div class="secao-carrinho">
+            <h2>🛒 Seu Carrinho</h2>
+            <div id="itens-carrinho">
+                <p style="color: #999;">Seu carrinho está vazio.</p>
+            </div>
+            
+            <div class="total-carrinho">
+                <span>Total:</span>
+                <span id="valor-total">R$ 0,00</span>
+            </div>
+
+            <div style="margin-top: 20px;">
+                <label for="nome-cliente" style="font-size: 12px; font-weight: bold;">Seu Nome / Mesa:</label>
+                <input type="text" id="nome-cliente" class="input-cliente" placeholder="Ex: Mesa 04 ou João Silva">
+            </div>
+
+            <button class="btn btn-pedido" id="btn-fechar-pedido" disabled>Enviar Pedido ao Restaurante</button>
+        </div>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+        import { getFirestore, collection, onSnapshot, addDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+
+        // Suas credenciais oficiais
+        const firebaseConfig = {
+            apiKey: "AIzaSyBIOTndcpgCqT9YYpEScaDRsqvAPH8p6_Y",
+            authDomain: "cardapio-digital-d87ae.firebaseapp.com",
+            projectId: "cardapio-digital-d87ae",
+            storageBucket: "cardapio-digital-d87ae.firebasestorage.app",
+            messagingSenderId: "26239101821",
+            appId: "1:26239101821:web:66e67a40d74db4beeeba14"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+
+        // --- ARRAYS FLUXO DO CARRINHO ---
+        let carrinho = [];
+        let produtosDoBanco = []; // Guarda os dados dos produtos para consulta rápida de preço
+
+        // 1. Carregar produtos do Firestore em tempo real
+        const cardapioDiv = document.getElementById('cardapio');
+        onSnapshot(collection(db, "produtos"), (snapshot) => {
+            if (snapshot.empty) {
+                cardapioDiv.innerHTML = "<p>Nenhum produto disponível.</p>";
+                return;
+            }
+
+            cardapioDiv.innerHTML = "";
+            produtosDoBanco = []; // Limpa o cache local
+
+            snapshot.forEach((doc) => {
+                const produto = doc.data();
+                const id = doc.id;
+                
+                // Salva no nosso array de suporte para a lógica do carrinho
+                produtosDoBanco.push({ id, ...produto });
+
+                cardapioDiv.innerHTML += `
+                    <div class="card-produto">
+                        <img src="${produto.imagemUrl || 'https://via.placeholder.com/200x140?text=Sem+Foto'}">
+                        <div class="info">
+                            <h3>${produto.nome}</h3>
+                            <p>${produto.descricao || ''}</p>
+                            <div class="preco">R$ ${produto.preco.toFixed(2).replace('.', ',')}</div>
+                            <button class="btn btn-add" data-id="${id}">Adicionar</button>
+                        </div>
+                    </div>
+                `;
+            });
+
+            // Adiciona evento de clique nos botões de adicionar
+            document.querySelectorAll('.btn-add').forEach(botao => {
+                botao.addEventListener('click', (e) => {
+                    const idProduto = e.target.getAttribute('data-id');
+                    adicionarItem(idProduto);
+                });
+            });
+        });
+
+        // 2. Lógica para Adicionar Item no Carrinho Local
+        function adicionarItem(id) {
+            // Busca os detalhes do produto no nosso cache local
+            const produtoItem = produtosDoBanco.find(p => p.id === id);
+            
+            // Verifica se o item já existe no carrinho do cliente
+            const itemExistente = carrinho.find(item => item.id === id);
+
+            if (itemExistente) {
+                itemExistente.quantidade += 1;
+            } else {
+                carrinho.push({
+                    id: produtoItem.id,
+                    nome: produtoItem.nome,
+                    preco: produtoItem.preco,
+                    quantidade: 1
+                });
+            }
+
+            atualizarInterfaceCarrinho();
+        }
+
+        // 3. Atualizar o HTML do carrinho de compras
+        function actualizarInterfaceCarrinho() {
+            const containerItens = document.getElementById('itens-carrinho');
+            const txtTotal = document.getElementById('valor-total');
+            const btnPedido = document.getElementById('btn-fechar-pedido');
+
+            if (carrinho.length === 0) {
+                containerItens.innerHTML = '<p style="color: #999;">Seu carrinho está vazio.</p>';
+                txtTotal.innerText = "R$ 0,00";
+                btnPedido.disabled = true;
+                return;
+            }
+
+            containerItens.innerHTML = "";
+            let totalGeral = 0;
+
+            carrinho.forEach(item => {
+                const subtotal = item.preco * item.quantidade;
+                totalGeral += subtotal;
+
+                containerItens.innerHTML += `
+                    <div class="item-carrinho">
+                        <div>
+                            <strong>${item.nome}</strong><br>
+                            <small>${item.quantidade}x R$ ${item.preco.toFixed(2).replace('.', ',')}</small>
+                        </div>
+                        <div>R$ ${subtotal.toFixed(2).replace('.', ',')}</div>
+                    </div>
+                `;
+            });
+
+            txtTotal.innerText = totalGeral.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+            btnPedido.disabled = false; // Habilita o botão se houver itens
+        }
+
+        // 4. Enviar o Pedido Completo para o Firestore
+        document.getElementById('btn-fechar-pedido').addEventListener('click', async () => {
+            const nomeCliente = document.getElementById('nome-cliente').value.trim();
+
+            if (!nomeCliente) {
+                alert("Por favor, informe seu Nome ou o número da sua Mesa para continuarmos.");
+                return;
+            }
+
+            // Calcula o total novamente por segurança antes de enviar
+            const totalFinal = carrinho.reduce((acc, item) => acc + (item.preco * item.quantidade), 0);
+            const btnPedido = document.getElementById('btn-fechar-pedido');
+
+            btnPedido.disabled = true;
+            btnPedido.innerText = "Enviando...";
+
+            try {
+                // Adiciona um documento na nova coleção 'pedidos'
+                await addDoc(collection(db, "pedidos"), {
+                    cliente: nomeCliente,
+                    itens: carrinho, // O array de objetos vai direto para o banco
+                    total: totalFinal,
+                    status: "pendente", // Status inicial do fluxo de pedidos
+                    criadoEm: new Date()
+                });
+
+                alert("🎉 Pedido enviado com sucesso! Aguarde o preparo.");
+                
+                // Limpa o carrinho local após o sucesso
+                carrinho = [];
+                document.getElementById('nome-cliente').value = "";
+                atualizarInterfaceCarrinho();
+
+            } catch (erro) {
+                console.error("Erro ao enviar pedido:", erro);
+                alert("Ocorreu um erro ao processar o seu pedido. Tente novamente.");
+            } finally {
+                btnPedido.disabled = false;
+                btnPedido.innerText = "Enviar Pedido ao Restaurante";
+            }
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Painel Admin - Cadastrar Produto</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', system-ui, sans-serif;
+            background-color: #f0f2f5;
+            margin: 0;
+            padding: 20px;
+            color: #333;
+        }
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+            background: white;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+        }
+        h1 {
+            margin-top: 0;
+            color: #111;
+            font-size: 24px;
+            border-bottom: 2px solid #eee;
+            padding-bottom: 10px;
+        }
+        .form-grupo {
+            margin-bottom: 20px;
+        }
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            font-size: 14px;
+        }
+        input[type="text"],
+        input[type="number"],
+        textarea {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 6px;
+            box-sizing: border-box;
+            font-family: inherit;
+        }
+        textarea {
+            resize: vertical;
+            height: 80px;
+        }
+        .btn-cadastrar {
+            background-color: #2ecc71;
+            color: white;
+            border: none;
+            padding: 12px 20px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: bold;
+            font-size: 16px;
+            width: 100%;
+            transition: background 0.2s;
+        }
+        .btn-cadastrar:hover { background-color: #27ae60; }
+        .btn-cadastrar:disabled { background-color: #95a5a6; cursor: not-allowed; }
+        #status-mensagem {
+            margin-top: 15px;
+            padding: 10px;
+            border-radius: 6px;
+            display: none;
+            font-weight: 500;
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <h1>✨ Cadastrar Novo Produto (Modo Gratuito)</h1>
+        
+        <form id="form-cadastro">
+            <div class="form-grupo">
+                <label for="nome">Nome do Produto *</label>
+                <input type="text" id="nome" required placeholder="Ex: Hambúrguer X-Salada">
+            </div>
+
+            <div class="form-grupo">
+                <label for="descricao">Descrição</label>
+                <textarea id="descricao" placeholder="Ex: Pão artesanal, blend bovino 150g, queijo, alface e tomate."></textarea>
+            </div>
+
+            <div class="form-grupo">
+                <label for="preco">Preço (R$) *</label>
+                <input type="number" id="preco" step="0.01" min="0" required placeholder="0,00">
+            </div>
+
+            <div class="form-grupo">
+                <label for="imagemUrl">Link (URL) da Foto do Produto</label>
+                <!-- Mudamos de arquivo para campo de texto comum -->
+                <input type="text" id="imagemUrl" placeholder="https://exemplo.com/sua-foto.jpg">
+                <small style="color: #777; display:block; margin-top: 5px;">
+                    Hospede a foto em sites como o <em>imgbb.com</em> ou <em>postimages.org</em> e cole o "Link direto" aqui.
+                </small>
+            </div>
+
+            <button type="submit" class="btn-cadastrar" id="btn-submit">Salvar Produto</button>
+        </form>
+
+        <div id="status-mensagem"></div>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+        import { getFirestore, collection, addDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+
+        // Suas credenciais oficiais
+        const firebaseConfig = {
+            apiKey: "AIzaSyBIOTndcpgCqT9YYpEScaDRsqvAPH8p6_Y",
+            authDomain: "cardapio-digital-d87ae.firebaseapp.com",
+            projectId: "cardapio-digital-d87ae",
+            storageBucket: "cardapio-digital-d87ae.firebasestorage.app",
+            messagingSenderId: "26239101821",
+            appId: "1:26239101821:web:66e67a40d74db4beeeba14"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+
+        const form = document.getElementById('form-cadastro');
+        const btnSubmit = document.getElementById('btn-submit');
+        const statusMsg = document.getElementById('status-mensagem');
+
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            btnSubmit.disabled = true;
+            mostrarStatus("Salvando no banco de dados...", "#ebf5fb", "#2980b9");
+
+            const nome = document.getElementById('nome').value.trim();
+            const descricao = document.getElementById('descricao').value.trim();
+            const preco = parseFloat(document.getElementById('preco').value);
+            const linkFoto = document.getElementById('imagemUrl').value.trim();
+
+            try {
+                const produtosRef = collection(db, "produtos");
+                
+                // Salvando direto no Firestore (sem passar pelo Storage)
+                await addDoc(produtosRef, {
+                    nome: nome,
+                    descricao: descricao,
+                    preco: preco,
+                    imagemUrl: linkFoto, // Grava a URL que você colou no campo
+                    criadoEm: new Date()
+                });
+
+                mostrarStatus("🎉 Produto cadastrado com sucesso!", "#e8f8f5", "#27ae60");
+                form.reset();
+
+            } catch (erro) {
+                console.error("Erro ao cadastrar:", erro);
+                mostrarStatus(`❌ Erro ao salvar: ${erro.message}`, "#fadbd8", "#c0392b");
+            } finally {
+                btnSubmit.disabled = false;
+            }
+        });
+
+        function mostrarStatus(texto, corFundo, corTexto) {
+            statusMsg.innerText = texto;
+            statusMsg.style.backgroundColor = corFundo;
+            statusMsg.style.color = corTexto;
+            statusMsg.style.display = "block";
+        }
+    </script>
+</body>
+</html>
