@@ -14,13 +14,18 @@
         }
         h1 { text-align: center; margin-bottom: 30px; }
         
-        /* Layout dividido: Cardápio na esquerda (70%) e Carrinho na direita (30%) */
+        /* Layout responsivo: Lado a lado no PC, empilhado no celular */
         .layout-principal {
             display: flex;
+            flex-direction: column;
             max-width: 1200px;
             margin: 0 auto;
             gap: 30px;
         }
+        @media(min-width: 768px) {
+            .layout-principal { flex-direction: row; }
+        }
+        
         .secao-cardapio {
             flex: 7;
         }
@@ -51,7 +56,7 @@
             justify-content: space-between;
         }
         .card-produto img { width: 100%; height: 140px; object-fit: cover; }
-        .info { padding: 12px; }
+        .info { padding: 12px; flex-grow: 1; display: flex; flex-direction: column; justify-content: space-between; }
         .info h3 { margin: 0 0 5px 0; font-size: 16px; }
         .info p { margin: 0 0 10px 0; font-size: 12px; color: #666; }
         .preco { font-weight: bold; color: #e67e22; margin-bottom: 10px; }
@@ -123,7 +128,6 @@
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
         import { getFirestore, collection, onSnapshot, addDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
-        // Suas credenciais oficiais
         const firebaseConfig = {
             apiKey: "AIzaSyBIOTndcpgCqT9YYpEScaDRsqvAPH8p6_Y",
             authDomain: "cardapio-digital-d87ae.firebaseapp.com",
@@ -136,12 +140,12 @@
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
 
-        // --- ARRAYS FLUXO DO CARRINHO ---
         let carrinho = [];
-        let produtosDoBanco = []; // Guarda os dados dos produtos para consulta rápida de preço
+        let produtosDoBanco = []; 
 
-        // 1. Carregar produtos do Firestore em tempo real
         const cardapioDiv = document.getElementById('cardapio');
+        
+        // 1. Carregar produtos do Firestore em tempo real
         onSnapshot(collection(db, "produtos"), (snapshot) => {
             if (snapshot.empty) {
                 cardapioDiv.innerHTML = "<p>Nenhum produto disponível.</p>";
@@ -149,43 +153,45 @@
             }
 
             cardapioDiv.innerHTML = "";
-            produtosDoBanco = []; // Limpa o cache local
+            produtosDoBanco = []; 
 
             snapshot.forEach((doc) => {
                 const produto = doc.data();
                 const id = doc.id;
                 
-                // Salva no nosso array de suporte para a lógica do carrinho
                 produtosDoBanco.push({ id, ...produto });
 
                 cardapioDiv.innerHTML += `
                     <div class="card-produto">
-                        <img src="${produto.imagemUrl || 'https://via.placeholder.com/200x140?text=Sem+Foto'}">
+                        <img src="${produto.imagemUrl || 'https://via.placeholder.com/200x140?text=Sem+Foto'}" alt="${produto.nome}">
                         <div class="info">
-                            <h3>${produto.nome}</h3>
-                            <p>${produto.descricao || ''}</p>
-                            <div class="preco">R$ ${produto.preco.toFixed(2).replace('.', ',')}</div>
-                            <button class="btn btn-add" data-id="${id}">Adicionar</button>
+                            <div>
+                                <h3>${produto.nome}</h3>
+                                <p>${produto.descricao || ''}</p>
+                            </div>
+                            <div>
+                                <div class="preco">R$ ${produto.preco.toFixed(2).replace('.', ',')}</div>
+                                <button class="btn btn-add" data-id="${id}">Adicionar</button>
+                            </div>
                         </div>
                     </div>
                 `;
             });
 
-            // Adiciona evento de clique nos botões de adicionar
+            // CORREÇÃO AQUI: Captura o clique nos botões de forma correta e modular
             document.querySelectorAll('.btn-add').forEach(botao => {
-                botao.addEventListener('click', (e) => {
+                botao.onclick = (e) => {
                     const idProduto = e.target.getAttribute('data-id');
                     adicionarItem(idProduto);
-                });
+                };
             });
         });
 
         // 2. Lógica para Adicionar Item no Carrinho Local
         function adicionarItem(id) {
-            // Busca os detalhes do produto no nosso cache local
             const produtoItem = produtosDoBanco.find(p => p.id === id);
+            if (!produtoItem) return;
             
-            // Verifica se o item já existe no carrinho do cliente
             const itemExistente = carrinho.find(item => item.id === id);
 
             if (itemExistente) {
@@ -199,7 +205,7 @@
                 });
             }
 
-            atualizarInterfaceCarrinho();
+            actualizarInterfaceCarrinho();
         }
 
         // 3. Atualizar o HTML do carrinho de compras
@@ -234,11 +240,11 @@
             });
 
             txtTotal.innerText = totalGeral.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
-            btnPedido.disabled = false; // Habilita o botão se houver itens
+            btnPedido.disabled = false; 
         }
 
         // 4. Enviar o Pedido Completo para o Firestore
-        document.getElementById('btn-fechar-pedido').addEventListener('click', async () => {
+        document.getElementById('btn-fechar-pedido').onclick = async () => {
             const nomeCliente = document.getElementById('nome-cliente').value.trim();
 
             if (!nomeCliente) {
@@ -246,7 +252,6 @@
                 return;
             }
 
-            // Calcula o total novamente por segurança antes de enviar
             const totalFinal = carrinho.reduce((acc, item) => acc + (item.preco * item.quantidade), 0);
             const btnPedido = document.getElementById('btn-fechar-pedido');
 
@@ -254,21 +259,19 @@
             btnPedido.innerText = "Enviando...";
 
             try {
-                // Adiciona um documento na nova coleção 'pedidos'
                 await addDoc(collection(db, "pedidos"), {
                     cliente: nomeCliente,
-                    itens: carrinho, // O array de objetos vai direto para o banco
+                    itens: carrinho, 
                     total: totalFinal,
-                    status: "pendente", // Status inicial do fluxo de pedidos
+                    status: "pendente", 
                     criadoEm: new Date()
                 });
 
                 alert("🎉 Pedido enviado com sucesso! Aguarde o preparo.");
                 
-                // Limpa o carrinho local após o sucesso
                 carrinho = [];
                 document.getElementById('nome-cliente').value = "";
-                atualizarInterfaceCarrinho();
+                actualizarInterfaceCarrinho();
 
             } catch (erro) {
                 console.error("Erro ao enviar pedido:", erro);
@@ -277,7 +280,7 @@
                 btnPedido.disabled = false;
                 btnPedido.innerText = "Enviar Pedido ao Restaurante";
             }
-        });
+        };
     </script>
 </body>
 </html>
