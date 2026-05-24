@@ -178,7 +178,7 @@
                 `;
             });
 
-            // CORREÇÃO AQUI: Captura o clique nos botões de forma correta e modular
+            // Captura o clique nos botões de forma correta e modular
             document.querySelectorAll('.btn-add').forEach(botao => {
                 botao.onclick = (e) => {
                     const idProduto = e.target.getAttribute('data-id');
@@ -243,7 +243,7 @@
             btnPedido.disabled = false; 
         }
 
-        // 4. Enviar o Pedido Completo para o Firestore
+        // 4. Enviar o Pedido Completo para o Firestore e Redirecionar
         document.getElementById('btn-fechar-pedido').onclick = async () => {
             const nomeCliente = document.getElementById('nome-cliente').value.trim();
 
@@ -259,7 +259,8 @@
             btnPedido.innerText = "Enviando...";
 
             try {
-                await addDoc(collection(db, "pedidos"), {
+                // ALTERAÇÃO AQUI: Guardamos o resultado da gravação para ler o ID gerado pelo Firebase
+                const resultado = await addDoc(collection(db, "pedidos"), {
                     cliente: nomeCliente,
                     itens: carrinho, 
                     total: totalFinal,
@@ -267,16 +268,17 @@
                     criadoEm: new Date()
                 });
 
-                alert("🎉 Pedido enviado com sucesso! Aguarde o preparo.");
-                
+                // Limpa o carrinho local antes de mudar de tela
                 carrinho = [];
                 document.getElementById('nome-cliente').value = "";
                 actualizarInterfaceCarrinho();
 
+                // Redireciona automaticamente o cliente para acompanhar em tempo real
+                window.location.href = `status.html?id=${resultado.id}`;
+
             } catch (erro) {
                 console.error("Erro ao enviar pedido:", erro);
                 alert("Ocorreu um erro ao processar o seu pedido. Tente novamente.");
-            } finally {
                 btnPedido.disabled = false;
                 btnPedido.innerText = "Enviar Pedido ao Restaurante";
             }
