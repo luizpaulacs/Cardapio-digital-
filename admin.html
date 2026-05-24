@@ -2,107 +2,357 @@
 <html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Painel Admin - Gerenciar Cardápio</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>🛠️ Admin · Gestão do Cardápio</title>
     <style>
-        body {
-            font-family: 'Segoe UI', system-ui, sans-serif;
-            background-color: #f0f2f5;
+        * {
             margin: 0;
-            padding: 20px;
-            color: #333;
+            padding: 0;
+            box-sizing: border-box;
         }
+
+        body {
+            font-family: 'Inter', system-ui, -apple-system, 'Segoe UI', 'Poppins', sans-serif;
+            background: linear-gradient(145deg, #f4f7fc 0%, #eef2f6 100%);
+            min-height: 100vh;
+            padding: 28px 20px;
+        }
+
+        @import url('https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,300;14..32,400;14..32,500;14..32,600;14..32,700;14..32,800&display=swap');
+
         .container {
-            max-width: 900px;
+            max-width: 1280px;
             margin: 0 auto;
         }
-        h1 {
-            color: #111;
+
+        /* Header principal */
+        .admin-header {
+            background: linear-gradient(115deg, #1e2f3f 0%, #0f1e2a 100%);
+            border-radius: 32px;
+            padding: 28px 32px;
+            margin-bottom: 32px;
+            box-shadow: 0 12px 30px rgba(0, 0, 0, 0.12);
+            position: relative;
+            overflow: hidden;
         }
-        /* Estilo da Tabela de Produtos */
+
+        .admin-header::before {
+            content: "🍽️";
+            position: absolute;
+            bottom: -15px;
+            right: 20px;
+            font-size: 6rem;
+            opacity: 0.06;
+            pointer-events: none;
+        }
+
+        .admin-header h1 {
+            font-size: 1.9rem;
+            font-weight: 800;
+            color: white;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            letter-spacing: -0.3px;
+            margin-bottom: 12px;
+        }
+
+        .admin-header h1::before {
+            content: "🛠️";
+            font-size: 1.8rem;
+        }
+
+        .admin-header p {
+            color: #b9d0e2;
+            font-weight: 500;
+            font-size: 0.9rem;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            flex-wrap: wrap;
+        }
+
+        .badge-live {
+            background: #27ae60;
+            color: white;
+            padding: 4px 12px;
+            border-radius: 60px;
+            font-size: 0.7rem;
+            font-weight: 600;
+            letter-spacing: 0.5px;
+        }
+
+        /* Tabela responsiva - estilo card em mobile */
+        .table-wrapper {
+            background: white;
+            border-radius: 28px;
+            box-shadow: 0 8px 30px rgba(0, 0, 0, 0.06);
+            overflow: hidden;
+            border: 1px solid rgba(230, 126, 34, 0.12);
+        }
+
         .tabela-produtos {
             width: 100%;
             border-collapse: collapse;
-            background: white;
-            border-radius: 8px;
-            overflow: hidden;
-            box-shadow: 0 4px 10px rgba(0,0,0,0.05);
-            margin-top: 20px;
+            font-size: 0.85rem;
         }
-        .tabela-produtos th, .tabela-produtos td {
-            padding: 12px 15px;
-            text-align: left;
-            border-bottom: 1px solid #eee;
-            vertical-align: middle;
+
+        .tabela-produtos thead tr {
+            background: linear-gradient(105deg, #2c3e50, #243342);
         }
+
         .tabela-produtos th {
-            background-color: #34495e;
+            padding: 18px 16px;
+            text-align: left;
             color: white;
+            font-weight: 600;
+            font-size: 0.8rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
         }
+
+        .tabela-produtos td {
+            padding: 18px 16px;
+            border-bottom: 1px solid #f0eef2;
+            vertical-align: middle;
+            background-color: white;
+            transition: background 0.2s;
+        }
+
+        .tabela-produtos tr:hover td {
+            background-color: #fefaf5;
+        }
+
+        /* Estilo da miniatura */
         .img-mini {
-            width: 50px;
-            height: 50px;
+            width: 56px;
+            height: 56px;
             object-fit: cover;
-            border-radius: 4px;
+            border-radius: 18px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.08);
             display: block;
-            margin: 0 auto;
+            transition: transform 0.2s;
         }
-        .input-texto {
-            width: 100%;
-            padding: 8px;
-            border: 1px solid #ccc;
-            border-radius: 4px;
-            box-sizing: border-box;
+
+        .img-mini:hover {
+            transform: scale(1.05);
         }
+
+        .produto-nome {
+            font-weight: 700;
+            color: #1e2f3f;
+            font-size: 0.95rem;
+            margin-bottom: 4px;
+        }
+
+        .produto-desc {
+            font-size: 0.7rem;
+            color: #8ba0ae;
+            line-height: 1.3;
+            max-width: 220px;
+        }
+
+        /* Campos de input modernos */
         .input-preco {
-            width: 90px;
-            padding: 8px;
-            border: 1px solid #ccc;
-            border-radius: 4px;
-            box-sizing: border-box;
+            width: 100px;
+            padding: 10px 12px;
+            border: 2px solid #e5eaef;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            text-align: center;
+            transition: all 0.2s;
+            font-family: inherit;
+            background: white;
         }
-        .btn-acao {
-            padding: 8px 16px;
+
+        .input-preco:focus {
+            border-color: #e67e22;
+            outline: none;
+            box-shadow: 0 0 0 3px rgba(230, 126, 34, 0.1);
+        }
+
+        .input-url {
+            width: 220px;
+            padding: 10px 14px;
+            border: 2px solid #e5eaef;
+            border-radius: 28px;
+            font-size: 0.75rem;
+            transition: all 0.2s;
+            font-family: inherit;
+            background: white;
+        }
+
+        .input-url:focus {
+            border-color: #e67e22;
+            outline: none;
+            box-shadow: 0 0 0 3px rgba(230, 126, 34, 0.1);
+        }
+
+        /* Botão moderno */
+        .btn-salvar {
+            background: linear-gradient(105deg, #e67e22, #d35400);
             border: none;
-            border-radius: 4px;
+            padding: 10px 20px;
+            border-radius: 40px;
+            color: white;
+            font-weight: 700;
+            font-size: 0.75rem;
             cursor: pointer;
-            font-weight: bold;
-            width: 100%;
+            transition: all 0.2s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            white-space: nowrap;
+            box-shadow: 0 2px 6px rgba(211, 84, 0, 0.2);
         }
-        .btn-salvar { background-color: #3498db; color: white; }
-        .btn-salvar:hover { background-color: #2980b9; }
+
+        .btn-salvar:hover {
+            transform: translateY(-2px);
+            background: linear-gradient(105deg, #d35400, #b64900);
+            box-shadow: 0 6px 14px rgba(211, 84, 0, 0.3);
+        }
+
+        /* Estilo para mobile (transformar tabela em cards) */
+        @media (max-width: 780px) {
+            body {
+                padding: 16px;
+            }
+
+            .admin-header {
+                padding: 20px 24px;
+            }
+
+            .admin-header h1 {
+                font-size: 1.5rem;
+            }
+
+            .table-wrapper {
+                border-radius: 24px;
+                overflow-x: auto;
+            }
+
+            .tabela-produtos {
+                min-width: 680px;
+            }
+        }
+
+        /* Para tablets pequenos, mantém tabela responsiva com scroll horizontal */
+        @media (max-width: 900px) {
+            .table-wrapper {
+                overflow-x: auto;
+                -webkit-overflow-scrolling: touch;
+            }
+        }
+
+        /* Loading e empty state */
+        .loading-row td {
+            text-align: center;
+            padding: 48px !important;
+            color: #8ba0ae;
+            font-weight: 500;
+        }
+
+        .empty-row td {
+            text-align: center;
+            padding: 48px !important;
+            background: #fefaf5;
+            color: #b87c4a;
+            font-weight: 500;
+        }
+
+        /* Toast de notificação customizada */
+        .toast-notify {
+            position: fixed;
+            bottom: 24px;
+            right: 24px;
+            background: #1e2f3f;
+            color: white;
+            padding: 12px 24px;
+            border-radius: 60px;
+            font-weight: 600;
+            font-size: 0.85rem;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            z-index: 1000;
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2);
+            animation: slideInRight 0.3s ease;
+            backdrop-filter: blur(8px);
+            background: rgba(30, 47, 63, 0.95);
+        }
+
+        @keyframes slideInRight {
+            from {
+                opacity: 0;
+                transform: translateX(40px);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+
+        /* ícones e ajustes */
+        .acao-cell {
+            white-space: nowrap;
+        }
+
+        .helper-icon {
+            display: inline-block;
+            width: 14px;
+            text-align: center;
+        }
+
+        footer {
+            text-align: center;
+            margin-top: 32px;
+            font-size: 0.7rem;
+            color: #9cb1c0;
+        }
     </style>
 </head>
 <body>
 
     <div class="container">
-        <h1>🛠️ Painel do Administrador</h1>
-        <p>Altere os preços ou atualize o link da foto dos produtos. As mudanças refletem imediatamente no app do cliente.</p>
+        <div class="admin-header">
+            <h1>Gerenciar Cardápio</h1>
+            <p>
+                <span>✨ Edite preços e imagens dos produtos</span>
+                <span class="badge-live">🔄 Tempo real</span>
+                <span>📡 Mudanças refletem instantaneamente</span>
+            </p>
+        </div>
 
-        <table class="tabela-produtos">
-            <thead>
-                <tr>
-                    <th style="width: 70px; text-align: center;">Foto Atual</th>
-                    <th>Produto</th>
-                    <th style="width: 110px;">Preço (R$)</th>
-                    <th>Link da Nova Foto (URL)</th>
-                    <th style="width: 100px;">Ações</th>
-                </tr>
-            </thead>
-            <tbody id="lista-admin">
-                <tr>
-                    <td colspan="5" style="text-align: center;">Carregando produtos...</td>
-                </tr>
-            </tbody>
-        </table>
+        <div class="table-wrapper">
+            <table class="tabela-produtos">
+                <thead>
+                    <tr>
+                        <th style="width: 80px; text-align: center;">Foto</th>
+                        <th>Produto</th>
+                        <th style="width: 110px;">Preço (R$)</th>
+                        <th>URL da imagem</th>
+                        <th style="width: 110px;">Ações</th>
+                    </tr>
+                </thead>
+                <tbody id="lista-admin">
+                    <tr class="loading-row">
+                        <td colspan="5">
+                            <span>🍔 Carregando produtos do cardápio...</span>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+        <footer>
+            ⚡ As alterações são salvas automaticamente no Firebase · sincronização com o app do cliente
+        </footer>
     </div>
 
     <script type="module">
-        // Importando apenas o necessário do Firestore (Sem o Storage)
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
         import { getFirestore, collection, onSnapshot, doc, updateDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
-        // Configuração oficial com as suas credenciais
         const firebaseConfig = {
             apiKey: "AIzaSyBIOTndcpgCqT9YYpEScaDRsqvAPH8p6_Y",
             authDomain: "cardapio-digital-d87ae.firebaseapp.com",
@@ -112,17 +362,36 @@
             appId: "1:26239101821:web:66e67a40d74db4beeeba14"
         };
 
-        // Inicializa o Firebase e o Banco de Dados
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
 
         const tbody = document.getElementById('lista-admin');
         const produtosRef = collection(db, "produtos");
 
-        // Listar produtos na tabela do Admin em tempo real
+        // Função para mostrar notificações elegantes
+        function showToast(message, isError = false) {
+            const existingToast = document.querySelector('.toast-notify');
+            if (existingToast) existingToast.remove();
+            
+            const toast = document.createElement('div');
+            toast.className = 'toast-notify';
+            toast.innerHTML = isError ? `❌ ${message}` : `✅ ${message}`;
+            if (isError) {
+                toast.style.background = "rgba(192, 57, 43, 0.95)";
+            } else {
+                toast.style.background = "rgba(39, 174, 96, 0.95)";
+            }
+            document.body.appendChild(toast);
+            setTimeout(() => {
+                toast.style.opacity = '0';
+                setTimeout(() => toast.remove(), 300);
+            }, 2800);
+        }
+
+        // Atualização em tempo real dos produtos
         onSnapshot(produtosRef, (snapshot) => {
             if (snapshot.empty) {
-                tbody.innerHTML = `<tr><td colspan="5" style="text-align:center;">Nenhum produto encontrado.</td></tr>`;
+                tbody.innerHTML = `<tr class="empty-row"><td colspan="5">📭 Nenhum produto cadastrado ainda. Adicione pelo painel de cadastro.</td></tr>`;
                 return;
             }
 
@@ -131,63 +400,144 @@
             snapshot.forEach((docItem) => {
                 const produto = docItem.data();
                 const id = docItem.id;
+                const imagemUrl = produto.imagemUrl || 'https://placehold.co/400x300?text=Sem+Imagem';
 
                 const tr = document.createElement('tr');
-                tr.innerHTML = `
-                    <td style="text-align: center;">
-                        <img src="${produto.imagemUrl || 'https://via.placeholder.com/50'}" class="img-mini" id="img-${id}">
-                    </td>
-                    <td>
-                        <strong>${produto.nome}</strong><br>
-                        <small style="color: #777;">${produto.descricao || 'Sem descrição.'}</small>
-                    </td>
-                    <td>
-                        <input type="number" step="0.01" class="input-preco" id="preco-${id}" value="${produto.preco || 0}">
-                    </td>
-                    <td>
-                        <!-- Campo de texto para colar a nova URL da foto diretamente do celular -->
-                        <input type="text" class="input-texto" id="url-${id}" value="${produto.imagemUrl || ''}" placeholder="Cole o link .jpg ou .png aqui">
-                    </td>
-                    <td>
-                        <button class="btn-acao btn-salvar" id="btn-${id}">Salvar</button>
-                    </td>
+                tr.setAttribute('data-id', id);
+                
+                // Célula da imagem
+                const tdImg = document.createElement('td');
+                tdImg.style.textAlign = 'center';
+                const img = document.createElement('img');
+                img.src = imagemUrl;
+                img.alt = produto.nome;
+                img.className = 'img-mini';
+                img.onerror = () => { img.src = 'https://placehold.co/400x300?text=Imagem+Indispon%C3%ADvel'; };
+                tdImg.appendChild(img);
+                
+                // Célula nome + descrição
+                const tdInfo = document.createElement('td');
+                tdInfo.innerHTML = `
+                    <div class="produto-nome">${escapeHtml(produto.nome)}</div>
+                    <div class="produto-desc">${escapeHtml(produto.descricao || 'Sem descrição cadastrada')}</div>
                 `;
-
+                
+                // Célula preço (input)
+                const tdPreco = document.createElement('td');
+                const precoInput = document.createElement('input');
+                precoInput.type = 'number';
+                precoInput.step = '0.01';
+                precoInput.min = '0';
+                precoInput.value = produto.preco || 0;
+                precoInput.className = 'input-preco';
+                precoInput.id = `preco-${id}`;
+                tdPreco.appendChild(precoInput);
+                
+                // Célula URL (input)
+                const tdUrl = document.createElement('td');
+                const urlInput = document.createElement('input');
+                urlInput.type = 'text';
+                urlInput.value = produto.imagemUrl || '';
+                urlInput.placeholder = 'https://exemplo.com/foto.jpg';
+                urlInput.className = 'input-url';
+                urlInput.id = `url-${id}`;
+                tdUrl.appendChild(urlInput);
+                
+                // Célula ação (botão salvar)
+                const tdAcao = document.createElement('td');
+                tdAcao.className = 'acao-cell';
+                const btnSalvar = document.createElement('button');
+                btnSalvar.innerHTML = '💾 Salvar';
+                btnSalvar.className = 'btn-salvar';
+                btnSalvar.id = `btn-${id}`;
+                tdAcao.appendChild(btnSalvar);
+                
+                tr.appendChild(tdImg);
+                tr.appendChild(tdInfo);
+                tr.appendChild(tdPreco);
+                tr.appendChild(tdUrl);
+                tr.appendChild(tdAcao);
+                
                 tbody.appendChild(tr);
-
-                // Evento para salvar as alterações do produto correspondente
-                document.getElementById(`btn-${id}`).addEventListener('click', () => {
-                    salvarAlteracoes(id);
+                
+                // Evento do botão salvar (apenas para este produto)
+                btnSalvar.addEventListener('click', async (e) => {
+                    e.preventDefault();
+                    const novoPreco = parseFloat(precoInput.value);
+                    const novaUrl = urlInput.value.trim();
+                    
+                    if (isNaN(novoPreco) || novoPreco < 0) {
+                        showToast("Digite um preço válido (ex: 29,90)", true);
+                        return;
+                    }
+                    
+                    // Feedback visual no botão
+                    const originalText = btnSalvar.innerHTML;
+                    btnSalvar.innerHTML = '⏳ Salvando...';
+                    btnSalvar.disabled = true;
+                    
+                    try {
+                        const produtoRef = doc(db, "produtos", id);
+                        const updates = {
+                            preco: novoPreco,
+                            imagemUrl: novaUrl
+                        };
+                        await updateDoc(produtoRef, updates);
+                        
+                        // Atualiza a imagem localmente na tabela para feedback instantâneo
+                        img.src = novaUrl || 'https://placehold.co/400x300?text=Sem+Imagem';
+                        img.onerror = () => { img.src = 'https://placehold.co/400x300?text=Erro+na+URL'; };
+                        
+                        showToast(`Produto "${produto.nome}" atualizado com sucesso!`);
+                    } catch (error) {
+                        console.error("Erro ao atualizar:", error);
+                        let errorMessage = "Erro ao salvar. Verifique conexão e permissões.";
+                        if (error.message.includes("permission")) {
+                            errorMessage = "Sem permissão de escrita. Ajuste as regras do Firebase.";
+                        }
+                        showToast(errorMessage, true);
+                    } finally {
+                        btnSalvar.innerHTML = originalText;
+                        btnSalvar.disabled = false;
+                    }
+                });
+                
+                // Opcional: preview dinâmico da URL enquanto digita (muda a imagem ao perder foco)
+                urlInput.addEventListener('blur', () => {
+                    const testUrl = urlInput.value.trim();
+                    if (testUrl && (testUrl.startsWith('http://') || testUrl.startsWith('https://'))) {
+                        const tempImg = new Image();
+                        tempImg.onload = () => {
+                            img.src = testUrl;
+                        };
+                        tempImg.onerror = () => {
+                            // não atualiza se URL quebrada, apenas mantém anterior
+                        };
+                        tempImg.src = testUrl;
+                    } else if (testUrl === '') {
+                        img.src = 'https://placehold.co/400x300?text=Sem+Imagem';
+                    }
                 });
             });
+        }, (error) => {
+            console.error("Erro no snapshot:", error);
+            tbody.innerHTML = `<tr class="empty-row"><td colspan="5">⚠️ Erro ao carregar produtos. Verifique sua conexão e regras de segurança do Firebase.</td></tr>`;
+            showToast("Falha na conexão com o banco de dados", true);
         });
-
-        // Função para atualizar Preço E Link de Imagem de uma só vez no Firestore
-        async function salvarAlteracoes(id) {
-            const novoPrecoInput = document.getElementById(`preco-${id}`).value;
-            const novaUrlInput = document.getElementById(`url-${id}`).value.trim();
-            const novoPrecoNumero = parseFloat(novoPrecoInput);
-
-            if (isNaN(novoPrecoNumero) || novoPrecoNumero < 0) {
-                alert("Por favor, digite um preço válido.");
-                return;
-            }
-
-            try {
-                const produtoDocRef = doc(db, "produtos", id);
-                
-                // Atualiza os dois campos de uma vez só
-                await updateDoc(produtoDocRef, {
-                    preco: novoPrecoNumero,
-                    imagemUrl: novaUrlInput // Salva o novo link digitado ou colado
-                });
-                
-                alert("Alterações salvas com sucesso!");
-            } catch (erro) {
-                console.error("Erro ao atualizar o produto:", erro);
-                alert("Ocorreu um erro ao salvar as modificações no banco de dados.");
-            }
+        
+        // Função de escape para evitar XSS
+        function escapeHtml(str) {
+            if (!str) return '';
+            return str.replace(/[&<>]/g, function(m) {
+                if (m === '&') return '&amp;';
+                if (m === '<') return '&lt;';
+                if (m === '>') return '&gt;';
+                return m;
+            });
         }
+        
+        // Pequeno helper para estilizar número no input (placeholder)
+        console.log("Painel Admin Gerenciar Cardápio - Modo Moderno Ativado");
     </script>
 </body>
 </html>

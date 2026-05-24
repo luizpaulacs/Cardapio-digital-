@@ -2,119 +2,361 @@
 <html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Painel Admin - Cadastrar Produto</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>✨ Admin · Cardápio Digital</title>
     <style>
-        body {
-            font-family: 'Segoe UI', system-ui, sans-serif;
-            background-color: #f0f2f5;
+        * {
             margin: 0;
-            padding: 20px;
-            color: #333;
+            padding: 0;
+            box-sizing: border-box;
         }
+
+        body {
+            font-family: 'Inter', system-ui, -apple-system, 'Segoe UI', 'Poppins', sans-serif;
+            background: linear-gradient(135deg, #e8eff5 0%, #dce5ed 100%);
+            min-height: 100vh;
+            padding: 28px 20px;
+        }
+
+        @import url('https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,300;14..32,400;14..32,500;14..32,600;14..32,700;14..32,800&display=swap');
+
         .container {
-            max-width: 600px;
+            max-width: 680px;
             margin: 0 auto;
-            background: white;
-            padding: 30px;
-            border-radius: 12px;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+            background: rgba(255, 255, 255, 0.97);
+            backdrop-filter: blur(0px);
+            border-radius: 42px;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25), 0 0 0 1px rgba(230, 126, 34, 0.1);
+            overflow: hidden;
+            transition: all 0.3s ease;
         }
-        h1 {
-            margin-top: 0;
-            color: #111;
-            font-size: 24px;
-            border-bottom: 2px solid #eee;
-            padding-bottom: 10px;
+
+        /* Header decorativo */
+        .header-admin {
+            background: linear-gradient(115deg, #2c3e50 0%, #1a2a3a 100%);
+            padding: 28px 32px;
+            position: relative;
         }
+
+        .header-admin::after {
+            content: "🍽️";
+            position: absolute;
+            bottom: -20px;
+            right: 30px;
+            font-size: 4rem;
+            opacity: 0.1;
+            pointer-events: none;
+        }
+
+        .header-admin h1 {
+            font-size: 1.8rem;
+            font-weight: 700;
+            color: #ffffff;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            letter-spacing: -0.3px;
+            margin-bottom: 8px;
+        }
+
+        .header-admin h1::before {
+            content: "✨";
+            font-size: 1.8rem;
+            background: none;
+        }
+
+        .subhead {
+            color: #bcd0df;
+            font-size: 0.85rem;
+            font-weight: 500;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+
+        .subhead span {
+            background: rgba(255,255,255,0.1);
+            padding: 4px 10px;
+            border-radius: 40px;
+            font-size: 0.7rem;
+        }
+
+        /* Formulário elegante */
+        .form-wrapper {
+            padding: 32px;
+        }
+
         .form-grupo {
-            margin-bottom: 20px;
+            margin-bottom: 24px;
+            position: relative;
         }
+
         label {
             display: block;
             margin-bottom: 8px;
             font-weight: 600;
-            font-size: 14px;
+            font-size: 0.8rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: #5d6e7e;
         }
+
+        label .required {
+            color: #e67e22;
+            margin-left: 4px;
+        }
+
         input[type="text"],
         input[type="number"],
         textarea {
             width: 100%;
-            padding: 10px;
-            border: 1px solid #ccc;
-            border-radius: 6px;
-            box-sizing: border-box;
+            padding: 14px 16px;
+            border: 2px solid #e9edf2;
+            border-radius: 28px;
             font-family: inherit;
+            font-size: 0.95rem;
+            transition: all 0.2s ease;
+            background: #ffffff;
+            color: #1f2d3a;
+            outline: none;
         }
+
+        input:focus,
+        textarea:focus {
+            border-color: #e67e22;
+            box-shadow: 0 0 0 4px rgba(230, 126, 34, 0.12);
+        }
+
         textarea {
+            border-radius: 24px;
             resize: vertical;
-            height: 80px;
+            min-height: 90px;
         }
+
+        .helper-text {
+            display: block;
+            font-size: 0.7rem;
+            color: #98a9bb;
+            margin-top: 8px;
+            margin-left: 12px;
+        }
+
+        .helper-text a {
+            color: #e67e22;
+            text-decoration: none;
+            font-weight: 500;
+        }
+
+        /* Preview de imagem elegante */
+        .preview-area {
+            margin-top: 8px;
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            flex-wrap: wrap;
+            background: #f8fafc;
+            border-radius: 24px;
+            padding: 12px 16px;
+            border: 1px dashed #cbd5e1;
+        }
+
+        .img-preview {
+            width: 64px;
+            height: 64px;
+            border-radius: 20px;
+            object-fit: cover;
+            background: #f1f5f9;
+            border: 2px solid white;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.05);
+        }
+
+        .preview-text {
+            font-size: 0.7rem;
+            color: #5d6e7e;
+        }
+
+        /* Botão principal */
         .btn-cadastrar {
-            background-color: #2ecc71;
+            background: linear-gradient(105deg, #e67e22, #d35400);
             color: white;
             border: none;
-            padding: 12px 20px;
-            border-radius: 6px;
+            padding: 16px 24px;
+            border-radius: 60px;
             cursor: pointer;
-            font-weight: bold;
-            font-size: 16px;
+            font-weight: 700;
+            font-size: 1rem;
             width: 100%;
-            transition: background 0.2s;
+            transition: all 0.25s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+            margin-top: 8px;
+            box-shadow: 0 8px 20px rgba(211, 84, 0, 0.25);
         }
-        .btn-cadastrar:hover { background-color: #27ae60; }
-        .btn-cadastrar:disabled { background-color: #95a5a6; cursor: not-allowed; }
+
+        .btn-cadastrar:hover:not(:disabled) {
+            transform: translateY(-2px);
+            background: linear-gradient(105deg, #d35400, #b64900);
+            box-shadow: 0 12px 24px rgba(211, 84, 0, 0.35);
+        }
+
+        .btn-cadastrar:disabled {
+            background: #b9c3ce;
+            box-shadow: none;
+            cursor: not-allowed;
+            opacity: 0.7;
+        }
+
+        /* Status message toast-like */
         #status-mensagem {
-            margin-top: 15px;
-            padding: 10px;
-            border-radius: 6px;
-            display: none;
+            margin: 0 32px 32px 32px;
+            padding: 14px 18px;
+            border-radius: 60px;
             font-weight: 500;
+            font-size: 0.85rem;
             text-align: center;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            animation: slideUp 0.3s ease;
+        }
+
+        @keyframes slideUp {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* Responsividade mobile */
+        @media (max-width: 560px) {
+            body {
+                padding: 16px;
+            }
+            .form-wrapper {
+                padding: 24px 20px;
+            }
+            .header-admin {
+                padding: 22px 24px;
+            }
+            .header-admin h1 {
+                font-size: 1.4rem;
+            }
+            .preview-area {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+            .btn-cadastrar {
+                padding: 14px 20px;
+            }
+        }
+
+        /* Loading spinner interno */
+        .spinner {
+            display: inline-block;
+            width: 18px;
+            height: 18px;
+            border: 2px solid rgba(255,255,255,0.3);
+            border-radius: 50%;
+            border-top-color: white;
+            animation: spin 0.6s linear infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        /* Footer */
+        .footer-note {
+            text-align: center;
+            padding: 20px 32px 28px;
+            font-size: 0.7rem;
+            color: #8ca3b9;
+            border-top: 1px solid #eef3f8;
+            background: #ffffffcc;
+        }
+
+        .footer-note a {
+            color: #e67e22;
+            text-decoration: none;
+        }
+
+        /* micro-interação */
+        .field-icon {
+            position: absolute;
+            right: 18px;
+            top: 42px;
+            color: #cbd5e1;
+            font-size: 1rem;
         }
     </style>
 </head>
 <body>
 
     <div class="container">
-        <h1>✨ Cadastrar Novo Produto (Modo Gratuito)</h1>
-        
-        <form id="form-cadastro">
-            <div class="form-grupo">
-                <label for="nome">Nome do Produto *</label>
-                <input type="text" id="nome" required placeholder="Ex: Hambúrguer X-Salada">
+        <div class="header-admin">
+            <h1>Cadastrar Produto</h1>
+            <div class="subhead">
+                <span>🔐 Painel Administrativo</span>
+                <span>⚡ Sincronização automática</span>
+                <span>🍔 Cardápio digital</span>
             </div>
+        </div>
 
-            <div class="form-grupo">
-                <label for="descricao">Descrição</label>
-                <textarea id="descricao" placeholder="Ex: Pão artesanal, blend bovino 150g, queijo, alface e tomate."></textarea>
-            </div>
+        <div class="form-wrapper">
+            <form id="form-cadastro">
+                <div class="form-grupo">
+                    <label for="nome">Nome do produto <span class="required">*</span></label>
+                    <input type="text" id="nome" required placeholder="Ex: Burger Artesanal Duplo" autocomplete="off">
+                </div>
 
-            <div class="form-grupo">
-                <label for="preco">Preço (R$) *</label>
-                <input type="number" id="preco" step="0.01" min="0" required placeholder="0,00">
-            </div>
+                <div class="form-grupo">
+                    <label for="descricao">Descrição</label>
+                    <textarea id="descricao" placeholder="Descreva os ingredientes e diferenciais..."></textarea>
+                </div>
 
-            <div class="form-grupo">
-                <label for="imagemUrl">Link (URL) da Foto do Produto</label>
-                <!-- Mudamos de arquivo para campo de texto comum -->
-                <input type="text" id="imagemUrl" placeholder="https://exemplo.com/sua-foto.jpg">
-                <small style="color: #777; display:block; margin-top: 5px;">
-                    Hospede a foto em sites como o <em>imgbb.com</em> ou <em>postimages.org</em> e cole o "Link direto" aqui.
-                </small>
-            </div>
+                <div class="form-grupo">
+                    <label for="preco">Preço (R$) <span class="required">*</span></label>
+                    <input type="number" id="preco" step="0.01" min="0" required placeholder="0,00">
+                </div>
 
-            <button type="submit" class="btn-cadastrar" id="btn-submit">Salvar Produto</button>
-        </form>
+                <div class="form-grupo">
+                    <label for="imagemUrl">URL da imagem do prato</label>
+                    <input type="text" id="imagemUrl" placeholder="https://exemplo.com/foto-prato.jpg">
+                    <div class="preview-area" id="preview-area" style="display: none;">
+                        <img id="imgPreview" class="img-preview" src="" alt="Preview">
+                        <div class="preview-text">🔍 Pré-visualização da imagem</div>
+                    </div>
+                    <div class="helper-text">
+                        💡 Dica: Use serviços gratuitos como 
+                        <a href="https://imgbb.com" target="_blank" rel="noopener">imgbb.com</a> ou 
+                        <a href="https://postimages.org" target="_blank">postimages.org</a> e cole o "link direto".
+                    </div>
+                </div>
+
+                <button type="submit" class="btn-cadastrar" id="btn-submit">
+                    <span>🍽️</span> Salvar no cardápio
+                </button>
+            </form>
+        </div>
 
         <div id="status-mensagem"></div>
+        <div class="footer-note">
+            🚀 O produto aparecerá instantaneamente no cardápio do cliente • Firebase Firestore
+        </div>
     </div>
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-        import { getFirestore, collection, addDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+        import { getFirestore, collection, addDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
-        // Suas credenciais oficiais
         const firebaseConfig = {
             apiKey: "AIzaSyBIOTndcpgCqT9YYpEScaDRsqvAPH8p6_Y",
             authDomain: "cardapio-digital-d87ae.firebaseapp.com",
@@ -129,48 +371,143 @@
 
         const form = document.getElementById('form-cadastro');
         const btnSubmit = document.getElementById('btn-submit');
-        const statusMsg = document.getElementById('status-mensagem');
+        const statusMsgDiv = document.getElementById('status-mensagem');
+        
+        // Preview de imagem
+        const imgUrlInput = document.getElementById('imagemUrl');
+        const previewArea = document.getElementById('preview-area');
+        const imgPreview = document.getElementById('imgPreview');
+
+        // Função de preview ao digitar URL
+        imgUrlInput.addEventListener('input', (e) => {
+            const url = e.target.value.trim();
+            if (url && (url.startsWith('http://') || url.startsWith('https://'))) {
+                imgPreview.src = url;
+                previewArea.style.display = 'flex';
+                imgPreview.onerror = () => {
+                    imgPreview.src = 'https://placehold.co/400x300?text=Erro+ao+carregar';
+                    previewArea.style.display = 'flex';
+                };
+            } else if (url === '') {
+                previewArea.style.display = 'none';
+            } else {
+                // Se URL inválida, mostra área com ícone de erro suave
+                previewArea.style.display = 'flex';
+                imgPreview.src = 'https://placehold.co/400x300?text=URL+inválida';
+            }
+        });
+
+        // Função para mostrar mensagem de status com estilo moderno
+        function mostrarStatus(texto, tipo = 'success') {
+            let corBg = '#e8f8f5';
+            let corTexto = '#1e6f5c';
+            let icone = '✅';
+            
+            if (tipo === 'error') {
+                corBg = '#fef3f2';
+                corTexto = '#c0392b';
+                icone = '❌';
+            } else if (tipo === 'loading') {
+                corBg = '#eff6ff';
+                corTexto = '#2c6e9e';
+                icone = '⏳';
+            } else {
+                corBg = '#e8f8f5';
+                corTexto = '#27ae60';
+                icone = '✨';
+            }
+            
+            statusMsgDiv.style.display = 'flex';
+            statusMsgDiv.style.backgroundColor = corBg;
+            statusMsgDiv.style.color = corTexto;
+            statusMsgDiv.innerHTML = `${icone} ${texto}`;
+            
+            if (tipo !== 'loading') {
+                setTimeout(() => {
+                    if (statusMsgDiv.style.display === 'flex') {
+                        statusMsgDiv.style.opacity = '0';
+                        setTimeout(() => {
+                            statusMsgDiv.style.display = 'none';
+                            statusMsgDiv.style.opacity = '1';
+                        }, 300);
+                    }
+                }, 4000);
+            }
+        }
 
         form.addEventListener('submit', async (e) => {
             e.preventDefault();
             
-            btnSubmit.disabled = true;
-            mostrarStatus("Salvando no banco de dados...", "#ebf5fb", "#2980b9");
-
             const nome = document.getElementById('nome').value.trim();
             const descricao = document.getElementById('descricao').value.trim();
-            const preco = parseFloat(document.getElementById('preco').value);
-            const linkFoto = document.getElementById('imagemUrl').value.trim();
-
+            const precoRaw = document.getElementById('preco').value;
+            const imagemUrl = imgUrlInput.value.trim();
+            
+            if (!nome) {
+                mostrarStatus('Por favor, informe o nome do produto', 'error');
+                return;
+            }
+            
+            const preco = parseFloat(precoRaw);
+            if (isNaN(preco) || preco < 0) {
+                mostrarStatus('Digite um preço válido (ex: 29.90)', 'error');
+                return;
+            }
+            
+            btnSubmit.disabled = true;
+            const originalHtml = btnSubmit.innerHTML;
+            btnSubmit.innerHTML = `<span class="spinner"></span> Salvando no cardápio...`;
+            mostrarStatus('Enviando para o Firebase...', 'loading');
+            
             try {
                 const produtosRef = collection(db, "produtos");
                 
-                // Salvando direto no Firestore (sem passar pelo Storage)
                 await addDoc(produtosRef, {
                     nome: nome,
-                    descricao: descricao,
+                    descricao: descricao || "",
                     preco: preco,
-                    imagemUrl: linkFoto, // Grava a URL que você colou no campo
-                    criadoEm: new Date()
+                    imagemUrl: imagemUrl || "",
+                    criadoEm: serverTimestamp(),
+                    createdAtFirestore: new Date()
                 });
-
-                mostrarStatus("🎉 Produto cadastrado com sucesso!", "#e8f8f5", "#27ae60");
+                
+                mostrarStatus(`🍔 Produto "${nome}" cadastrado com sucesso!`, 'success');
                 form.reset();
-
+                previewArea.style.display = 'none';
+                imgPreview.src = '';
+                
+                // Pequeno destaque animado no botão
+                btnSubmit.innerHTML = originalHtml;
+                setTimeout(() => {
+                    btnSubmit.disabled = false;
+                }, 800);
+                
             } catch (erro) {
-                console.error("Erro ao cadastrar:", erro);
-                mostrarStatus(`❌ Erro ao salvar: ${erro.message}`, "#fadbd8", "#c0392b");
-            } finally {
+                console.error("Firestore error:", erro);
+                let erroMsg = erro.message;
+                if (erroMsg.includes("permission")) {
+                    erroMsg = "Sem permissão de escrita. Verifique as regras de segurança do Firebase.";
+                }
+                mostrarStatus(`❌ Erro: ${erroMsg.substring(0, 100)}`, 'error');
+                btnSubmit.innerHTML = originalHtml;
                 btnSubmit.disabled = false;
             }
         });
-
-        function mostrarStatus(texto, corFundo, corTexto) {
-            statusMsg.innerText = texto;
-            statusMsg.style.backgroundColor = corFundo;
-            statusMsg.style.color = corTexto;
-            statusMsg.style.display = "block";
-        }
+        
+        // sugestão de placeholder dinâmico para melhor UX
+        const precoInput = document.getElementById('preco');
+        precoInput.addEventListener('input', (e) => {
+            let val = e.target.value;
+            if (val && !isNaN(parseFloat(val))) {
+                // apenas formata visual sem alterar valor bruto
+                if (val.includes('.')) {
+                    let partes = val.split('.');
+                    if (partes[1] && partes[1].length > 2) {
+                        e.target.value = parseFloat(val).toFixed(2);
+                    }
+                }
+            }
+        });
     </script>
 </body>
 </html>

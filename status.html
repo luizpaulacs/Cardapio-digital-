@@ -2,43 +2,299 @@
 <html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>⏳ Acompanhar Pedido</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>⏳ Acompanhar Pedido · Flavours Bistro</title>
     <style>
-        body { font-family: 'Segoe UI', system-ui, sans-serif; background-color: #f7f9fc; margin: 0; padding: 20px; text-align: center; color: #333; }
-        .box-status { max-width: 450px; background: white; margin: 40px auto; padding: 30px; border-radius: 16px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); }
-        .num-pedido { font-size: 12px; color: #999; margin-bottom: 20px; }
-        
-        /* Linha do Tempo Visual */
-        .linha-tempo { display: flex; justify-content: space-between; margin: 30px 0; position: relative; }
-        .linha-tempo::before { content: ''; position: absolute; background: #ddd; height: 4px; width: 100%; top: 50%; transform: translateY(-50%); z-index: 1; }
-        .passo { width: 30px; height: 30px; background: #ddd; border-radius: 50%; z-index: 2; display: flex; align-items: center; justify-content: center; font-weight: bold; color: white; transition: 0.3s; }
-        
-        /* Cores dinâmicas dos estados ativos */
-        .passo.ativo { background-color: #e67e22; box-shadow: 0 0 10px rgba(230, 126, 34, 0.5); }
-        .passo.concluido { background-color: #2ecc71; }
-        
-        #texto-status { font-size: 22px; font-weight: bold; color: #2c3e50; margin: 20px 0; }
-        #animacao-status { font-size: 50px; margin: 10px 0; }
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', system-ui, -apple-system, 'Segoe UI', 'Poppins', sans-serif;
+            background: linear-gradient(145deg, #faf8f5 0%, #f0ebe6 100%);
+            min-height: 100vh;
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #2c241a;
+        }
+
+        @import url('https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,300;14..32,400;14..32,500;14..32,600;14..32,700;14..32,800&display=swap');
+
+        .box-status {
+            max-width: 520px;
+            width: 100%;
+            background: rgba(255, 255, 255, 0.97);
+            backdrop-filter: blur(0px);
+            margin: 0 auto;
+            padding: 36px 32px;
+            border-radius: 48px;
+            box-shadow: 0 25px 45px -12px rgba(0, 0, 0, 0.2), 0 0 0 1px rgba(230, 126, 34, 0.12);
+            transition: all 0.3s ease;
+            text-align: center;
+        }
+
+        /* Header do card */
+        .box-status h2 {
+            font-size: 1.8rem;
+            font-weight: 800;
+            background: linear-gradient(135deg, #e67e22, #d35400);
+            background-clip: text;
+            -webkit-background-clip: text;
+            color: transparent;
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+
+        .box-status h2::before {
+            content: "🍔";
+            font-size: 1.8rem;
+            background: none;
+            -webkit-background-clip: unset;
+            color: #e67e22;
+        }
+
+        .num-pedido {
+            font-size: 0.75rem;
+            font-weight: 600;
+            background: #fef3e8;
+            display: inline-block;
+            padding: 6px 18px;
+            border-radius: 60px;
+            color: #d35400;
+            letter-spacing: 0.3px;
+            margin-bottom: 28px;
+            border: 1px solid #ffe0c0;
+        }
+
+        /* Animação de status */
+        #animacao-status {
+            font-size: 72px;
+            margin: 20px 0 8px;
+            transition: transform 0.3s ease;
+            filter: drop-shadow(0 6px 12px rgba(0, 0, 0, 0.1));
+        }
+
+        #texto-status {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: #2c3e50;
+            margin: 16px 0 24px;
+            letter-spacing: -0.3px;
+        }
+
+        /* Linha do tempo moderna */
+        .linha-tempo {
+            display: flex;
+            justify-content: space-between;
+            margin: 36px 0 28px;
+            position: relative;
+            padding: 0 12px;
+        }
+
+        .linha-tempo::before {
+            content: '';
+            position: absolute;
+            background: linear-gradient(90deg, #e0cfc0, #d4c0ad, #e0cfc0);
+            height: 4px;
+            width: calc(100% - 40px);
+            left: 50%;
+            top: 50%;
+            transform: translate(-50%, -50%);
+            z-index: 1;
+            border-radius: 4px;
+        }
+
+        .passo {
+            width: 44px;
+            height: 44px;
+            background: #e2d5c8;
+            border-radius: 50%;
+            z-index: 2;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 800;
+            font-size: 1.1rem;
+            color: white;
+            transition: all 0.35s cubic-bezier(0.2, 0.9, 0.4, 1.1);
+            position: relative;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        /* Labels abaixo dos passos */
+        .passo-label {
+            position: absolute;
+            bottom: -28px;
+            font-size: 0.65rem;
+            font-weight: 600;
+            color: #9b7b64;
+            white-space: nowrap;
+            left: 50%;
+            transform: translateX(-50%);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .passo {
+            position: relative;
+        }
+
+        .passo.ativo {
+            background: linear-gradient(135deg, #e67e22, #d35400);
+            box-shadow: 0 0 0 4px rgba(230, 126, 34, 0.25), 0 4px 12px rgba(211, 84, 0, 0.3);
+            transform: scale(1.05);
+        }
+
+        .passo.concluido {
+            background: linear-gradient(135deg, #2ecc71, #27ae60);
+            box-shadow: 0 2px 8px rgba(46, 204, 113, 0.3);
+        }
+
+        /* Ícones internos nos passos (opcional) */
+        .passo[data-step="1"]::before { content: "📋"; font-size: 1rem; }
+        .passo[data-step="2"]::before { content: "🍳"; font-size: 1rem; }
+        .passo[data-step="3"]::before { content: "🎉"; font-size: 1rem; }
+        .passo.concluido[data-step="1"]::before { content: "✅"; }
+        .passo.concluido[data-step="2"]::before { content: "✅"; }
+        .passo.concluido[data-step="3"]::before { content: "🥳"; }
+        .passo.ativo[data-step="1"]::before { content: "📥"; }
+        .passo.ativo[data-step="2"]::before { content: "👨‍🍳"; }
+        .passo.ativo[data-step="3"]::before { content: "🍔"; }
+
+        /* Mensagem de rodapé */
+        .info-footer {
+            margin-top: 32px;
+            padding-top: 20px;
+            border-top: 1px solid #f0e2d4;
+        }
+
+        .info-footer p {
+            font-size: 0.7rem;
+            color: #b48c6c;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+
+        .live-badge {
+            background: #27ae60;
+            color: white;
+            padding: 3px 10px;
+            border-radius: 40px;
+            font-size: 0.6rem;
+            font-weight: 700;
+            letter-spacing: 0.5px;
+        }
+
+        /* Responsividade */
+        @media (max-width: 550px) {
+            body {
+                padding: 16px;
+            }
+            .box-status {
+                padding: 28px 20px;
+                border-radius: 36px;
+            }
+            .box-status h2 {
+                font-size: 1.4rem;
+            }
+            #texto-status {
+                font-size: 1.2rem;
+            }
+            #animacao-status {
+                font-size: 56px;
+            }
+            .passo {
+                width: 38px;
+                height: 38px;
+                font-size: 0.9rem;
+            }
+            .passo-label {
+                font-size: 0.55rem;
+                bottom: -24px;
+            }
+            .linha-tempo::before {
+                width: calc(100% - 30px);
+            }
+        }
+
+        @media (max-width: 450px) {
+            .passo-label {
+                font-size: 0.5rem;
+                white-space: normal;
+                width: 60px;
+                text-align: center;
+                line-height: 1.2;
+            }
+            .passo {
+                margin-top: 8px;
+            }
+        }
+
+        /* Animações suaves */
+        @keyframes pulseGlow {
+            0% { box-shadow: 0 0 0 0 rgba(230, 126, 34, 0.4);}
+            70% { box-shadow: 0 0 0 12px rgba(230, 126, 34, 0);}
+            100% { box-shadow: 0 0 0 0 rgba(230, 126, 34, 0);}
+        }
+
+        .passo.ativo {
+            animation: pulseGlow 1.5s infinite;
+        }
+
+        /* Loader inicial */
+        .loading-shimmer {
+            background: linear-gradient(90deg, #f0ede8, #fff8f0, #f0ede8);
+            background-size: 200% 100%;
+            animation: shimmer 1.2s infinite;
+            border-radius: 28px;
+        }
+
+        @keyframes shimmer {
+            0% { background-position: 200% 0; }
+            100% { background-position: -200% 0; }
+        }
     </style>
 </head>
 <body>
 
     <div class="box-status">
-        <h2>🍔 Status do seu Pedido</h2>
-        <div class="num-pedido" id="id-pedido">ID do Pedido: Carregando...</div>
+        <h2>Status do seu Pedido</h2>
+        <div class="num-pedido" id="id-pedido">🆔 Carregando pedido...</div>
         
         <div id="animacao-status">⏳</div>
-        <div id="texto-status">Recebendo pedido...</div>
+        <div id="texto-status">Conectando ao restaurante...</div>
 
-        <!-- Linha do tempo gráfica -->
+        <!-- Linha do tempo gráfica com labels -->
         <div class="linha-tempo">
-            <div class="passo" id="p1">1</div>
-            <div class="passo" id="p2">2</div>
-            <div class="passo" id="p3">3</div>
+            <div class="passo" id="p1" data-step="1">
+                <span class="passo-label">Recebido</span>
+            </div>
+            <div class="passo" id="p2" data-step="2">
+                <span class="passo-label">Preparo</span>
+            </div>
+            <div class="passo" id="p3" data-step="3">
+                <span class="passo-label">Pronto</span>
+            </div>
         </div>
         
-        <p style="font-size: 14px; color: #666;">Fique de olho nessa tela, ela atualiza sozinha conforme seu pedido avança!</p>
+        <div class="info-footer">
+            <p>
+                <span>🔄 Atualização automática</span>
+                <span class="live-badge">Ao vivo</span>
+                <span>🍔 Acompanhe em tempo real</span>
+            </p>
+        </div>
     </div>
 
     <script type="module">
@@ -61,47 +317,83 @@
         const parametros = new URLSearchParams(window.location.search);
         const idPedido = parametros.get('id');
 
+        // Elementos DOM
+        const idPedidoSpan = document.getElementById('id-pedido');
+        const txtStatus = document.getElementById('texto-status');
+        const animeDiv = document.getElementById('animacao-status');
+        const p1 = document.getElementById('p1');
+        const p2 = document.getElementById('p2');
+        const p3 = document.getElementById('p3');
+
         if (idPedido) {
-            document.getElementById('id-pedido').innerText = `Pedido nº: ${idPedido.slice(-6)}`; // Mostra só os 6 últimos caracteres para ficar amigável
+            // Mostra ID resumido amigável
+            const idResumido = idPedido.length > 8 ? idPedido.slice(-8) : idPedido;
+            idPedidoSpan.innerHTML = `🆔 Pedido #${idResumido}`;
             
             // Fica vigiando unicamente esse pedido do cliente em tempo real
             onSnapshot(doc(db, "pedidos", idPedido), (docSnap) => {
                 if (!docSnap.exists()) {
-                    document.getElementById('texto-status').innerText = "Pedido não encontrado.";
+                    txtStatus.innerText = "Pedido não encontrado.";
+                    animeDiv.innerText = "❓";
+                    p1.className = p2.className = p3.className = "passo";
+                    idPedidoSpan.innerHTML = "⚠️ Pedido não localizado";
                     return;
                 }
 
                 const dados = docSnap.data();
                 atualizarTelaStatus(dados.status);
+            }, (error) => {
+                console.error("Erro ao buscar pedido:", error);
+                txtStatus.innerText = "Erro ao conectar. Verifique sua internet.";
+                animeDiv.innerText = "⚠️";
             });
+        } else {
+            idPedidoSpan.innerHTML = "❌ ID não informado";
+            txtStatus.innerText = "Link inválido. Volte ao cardápio.";
+            animeDiv.innerText = "🔗";
         }
 
         function atualizarTelaStatus(status) {
-            const txt = document.getElementById('texto-status');
-            const anime = document.getElementById('animacao-status');
-            const p1 = document.getElementById('p1');
-            const p2 = document.getElementById('p2');
-            const p3 = document.getElementById('p3');
-
             // Reseta classes
-            p1.className = p2.className = p3.className = "passo";
-
+            p1.className = "passo";
+            p2.className = "passo";
+            p3.className = "passo";
+            
+            // Remove qualquer animação extra
+            p1.style.animation = 'none';
+            p2.style.animation = 'none';
+            p3.style.animation = 'none';
+            
             if (status === "pendente") {
-                txt.innerText = "Recebido! Aguardando Cozinha...";
-                anime.innerText = "📥";
-                p1.className = "passo ativo";
-            } else if (status === "em_preparo") {
-                txt.innerText = "Seu pedido está sendo preparado!";
-                anime.innerText = "👨‍🍳";
-                p1.className = "passo concluido";
-                p2.className = "passo ativo";
-            } else if (status === "concluido") {
-                txt.innerText = "Pedido Pronto! Bom Apetite!";
-                anime.innerText = "🥳🍔";
-                p1.className = "passo concluido";
-                p2.className = "passo concluido";
-                p3.className = "passo concluido ativo";
+                txtStatus.innerText = "📋 Pedido recebido! Aguardando confirmação da cozinha...";
+                animeDiv.innerText = "📥📋";
+                p1.classList.add("ativo");
+                p1.style.animation = '';
+                // status de pendente: apenas passo 1 ativo
+            } 
+            else if (status === "em_preparo") {
+                txtStatus.innerText = "👨‍🍳 Seu pedido está sendo preparado com muito cuidado!";
+                animeDiv.innerText = "🔥👨‍🍳";
+                p1.classList.add("concluido");
+                p2.classList.add("ativo");
+                p2.style.animation = '';
+            } 
+            else if (status === "concluido") {
+                txtStatus.innerText = "🎉 Pedido pronto! Retire no balcão. Bom apetite!";
+                animeDiv.innerText = "🍔✨🥳";
+                p1.classList.add("concluido");
+                p2.classList.add("concluido");
+                p3.classList.add("concluido");
+                p3.classList.add("ativo");
+                p3.style.animation = '';
+                
+                // efeito adicional de confete simbólico (apenas visual)
+                animeDiv.style.transform = "scale(1.1)";
+                setTimeout(() => { if(animeDiv) animeDiv.style.transform = "scale(1)"; }, 400);
             }
+            
+            // Força atualização dos pseudo-elementos (reflow opcional)
+            void p1.offsetHeight;
         }
     </script>
 </body>
