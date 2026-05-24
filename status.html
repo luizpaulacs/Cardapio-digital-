@@ -53,7 +53,6 @@
             gap: 10px;
         }
 
-        /* Removido o pseudo-elemento fixo h2::before para controlarmos dinamicamente o emoji por JS */
         .header-emoji {
             font-size: 1.8rem;
         }
@@ -160,10 +159,9 @@
         .passo.concluido[data-step="3"]::before { content: "🥳"; }
         .passo.ativo[data-step="1"]::before { content: "📥"; }
         .passo.ativo[data-step="2"]::before { content: "👨‍🍳"; }
-        .passo.ativo[data-step="3"]::before { content: "🍔"; }
-
-        /* Altera o ícone do último passo ativo caso mude o tema para doces por JavaScript */
-        .box-status.tema-doces-ativo .passo.ativo[data-step="3"]::before { content: "🧁"; }
+        
+        /* Gerenciamento dinâmico de emojis do passo 3 ativos via CSS Injection */
+        .passo.ativo[data-step="3"]::before { content: var(--emoji-final, "🍔"); }
 
         /* Mensagem de rodapé */
         .info-footer {
@@ -264,11 +262,9 @@
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
 
-        // Pega o ID do pedido direto da URL do navegador do cliente
         const parametros = new URLSearchParams(window.location.search);
         const idPedido = parametros.get('id');
 
-        // Elementos DOM
         const statusCard = document.getElementById('status-card');
         const lojaEmoji = document.getElementById('loja-emoji');
         const txtFooterNicho = document.getElementById('txt-footer-nicho');
@@ -280,15 +276,22 @@
         const p2 = document.getElementById('p2');
         const p3 = document.getElementById('p3');
 
-        // Variável global de suporte para saber o nicho do pedido
-        let nichoPedido = "lanches";
+        // Configuração modular completa para dar suporte a todas as suas operações
+        const configuracaoLojas = {
+            lanches: { emoji: "🍔", nome: "Lanchonete", rodapé: "seu burger", local: "no balcão" },
+            doces: { emoji: "🍰", nome: "Doceria", rodapé: "seus doces", local: "na confeitaria" },
+            pizzas: { emoji: "🍕", nome: "Pizzaria", rodapé: "sua pizza", local: "na pizzaria" },
+            esfihas: { emoji: "0", nome: "Esfiharia", rodapé: "suas esfihas", local: "na esfiharia" },
+            pasteis: { emoji: "🥟", nome: "Pastelaria", rodapé: "seus pastéis", local: "na pastelaria" },
+            sucos: { emoji: "🥤", nome: "Sucos e Bebidas", rodapé: "suas bebidas", local: "no balcão de sucos" }
+        };
+
+        let lojaConfig = configuracaoLojas.lanches; 
 
         if (idPedido) {
-            // Mostra ID resumido amigável
             const idResumido = idPedido.length > 8 ? idPedido.slice(-8) : idPedido;
             idPedidoSpan.innerHTML = `🆔 Pedido #${idResumido}`;
             
-            // Fica vigiando unicamente esse pedido do cliente em tempo real
             onSnapshot(doc(db, "pedidos", idPedido), (docSnap) => {
                 if (!docSnap.exists()) {
                     txtStatus.innerText = "Pedido não encontrado.";
@@ -300,18 +303,15 @@
 
                 const dados = docSnap.data();
                 
-                // MÁGICA MULTI-LOJAS AUTOMÁTICA: Detecta o carimbo do banco e ajusta o visual
-                if (dados.comercio === "doces") {
-                    nichoPedido = "doces";
-                    lojaEmoji.innerText = "🍰";
-                    txtFooterNicho.innerText = "🍰 Acompanhe seus doces em tempo real";
-                    statusCard.classList.add("tema-doces-ativo"); // Modifica o ícone do passo 3 por CSS
-                } else {
-                    nichoPedido = "lanches";
-                    lojaEmoji.innerText = "🍔";
-                    txtFooterNicho.innerText = "🍔 Acompanhe seu burger em tempo real";
-                    statusCard.classList.remove("tema-doces-ativo");
-                }
+                // Mapeia e injeta os textos e emojis baseados no comércio do pedido
+                const comercioSalvo = dados.comercio || 'lanches';
+                lojaConfig = configuracaoLojas[comercioSalvo] || configuracaoLojas.lanches;
+
+                lojaEmoji.innerText = lojaConfig.emoji;
+                txtFooterNicho.innerText = `${lojaConfig.emoji} Acompanhe seu pedido da ${lojaConfig.nome} em tempo real`;
+                
+                // Injeta dinamicamente a propriedade CSS para mudar o emoji de loading do passo 3
+                p3.style.setProperty('--emoji-final', `"${lojaConfig.emoji}"`);
 
                 atualizarTelaStatus(dados.status);
             }, (error) => {
@@ -326,50 +326,42 @@
         }
 
         function atualizarTelaStatus(status) {
-            // Reseta classes
             p1.className = "passo";
             p2.className = "passo";
             p3.className = "passo";
             
-            // Remove qualquer animação extra
             p1.style.animation = 'none';
             p2.style.animation = 'none';
             p3.style.animation = 'none';
             
             if (status === "pendente") {
-                txtStatus.innerText = nichoPedido === "doces" 
-                    ? "📋 Pedido recebido! Aguardando confirmação da confeitaria..."
-                    : "📋 Pedido recebido! Aguardando confirmação da cozinha...";
+                txtStatus.innerText = `📋 Pedido recebido! Aguardando confirmação da equipe de produção...`;
                 animeDiv.innerText = "📥📋";
                 p1.classList.add("ativo");
                 p1.style.animation = '';
             } 
             else if (status === "em_preparo") {
-                txtStatus.innerText = nichoPedido === "doces"
-                    ? "🧁 Seus doces estão sendo preparados na área de confeitaria!"
-                    : "👨‍🍳 Seu pedido está sendo preparado com muito cuidado!";
-                animeDiv.innerText = nichoPedido === "doces" ? "👩‍🍳✨" : "🔥👨‍🍳";
+                txtStatus.innerText = `👨‍🍳 Tudo pronto! Seu pedido está sendo preparado com muito cuidado e higiene.`;
+                animeDiv.innerText = "🔥👨‍🍳";
                 p1.classList.add("concluido");
                 p2.classList.add("ativo");
                 p2.style.animation = '';
             } 
             else if (status === "concluido") {
-                txtStatus.innerText = nichoPedido === "doces"
-                    * "🎉 Seus doces estão prontos! Retire no balcão da confeitaria. 🥰"
-                    : "🎉 Pedido pronto! Retire no balcão. Bom apetite!";
-                animeDiv.innerText = nichoPedido === "doces" ? "🍰✨🥳" : "🍔✨🥳";
+                // CORREÇÃO EFETUADA: Substituído o '*' pelo ':' correto na verificação
+                txtStatus.innerText = `🎉 Seu pedido está pronto! Vá até o setor e retire ${lojaConfig.local}. Bom apetite! 🥰`;
+                animeDiv.innerText = `${lojaConfig.emoji}✨🥳`;
                 p1.classList.add("concluido");
                 p2.classList.add("concluido");
                 p3.classList.add("concluido");
                 p3.classList.add("ativo");
                 p3.style.animation = '';
                 
-                // Micro-interação visual de escala
                 animeDiv.style.transform = "scale(1.1)";
                 setTimeout(() => { if(animeDiv) animeDiv.style.transform = "scale(1)"; }, 400);
             }
             
-            void p1.offsetHeight; // Força reflow básico de segurança para navegadores mobile
+            void p1.offsetHeight; 
         }
     </script>
 </body>
