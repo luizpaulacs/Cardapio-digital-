@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-    <title>🍔 Flavours - Cardápio Digital</title>
+    <title>✨ Cardápio Digital · Flavours</title>
     <style>
         * {
             margin: 0;
@@ -38,28 +38,6 @@
             gap: 12px;
         }
 
-        h1::before {
-            content: "🍽️";
-            font-size: 2rem;
-            background: none;
-            -webkit-background-clip: unset;
-            color: #e67e22;
-        }
-
-        .subhead {
-            text-align: center;
-            color: #7f6b5c;
-            margin-bottom: 35px;
-            font-weight: 500;
-            font-size: 0.95rem;
-            border-bottom: 1px solid #ffe0c0;
-            display: inline-block;
-            width: auto;
-            margin-left: auto;
-            margin-right: auto;
-            padding-bottom: 8px;
-        }
-
         /* Layout responsivo avançado */
         .layout-principal {
             display: flex;
@@ -73,7 +51,7 @@
             .layout-principal {
                 flex-direction: row;
                 align-items: flex-start;
-            }
+                }
         }
 
         /* Seção Cardápio */
@@ -298,18 +276,7 @@
             margin-top: 8px;
         }
 
-        /* Badge animado */
-        .badge-qtd {
-            background: #e67e22;
-            color: white;
-            border-radius: 40px;
-            padding: 2px 8px;
-            font-size: 0.7rem;
-            font-weight: bold;
-            margin-left: 6px;
-        }
-
-        /* Remover item (opcional elegante) */
+        /* Remover item */
         .remove-item {
             background: none;
             border: none;
@@ -326,7 +293,7 @@
             background: #fee2dd;
         }
 
-        /* loading shimmer */
+        /* Loading shimmer */
         .skeleton-loader {
             grid-column: span 1;
             background: #ede5db;
@@ -340,12 +307,28 @@
             font-size: 0.75rem;
             color: #b7a084;
         }
+
+        .subhead-container {
+            text-align: center;
+            margin-bottom: 35px;
+        }
+
+        .subhead {
+            color: #7f6b5c;
+            font-weight: 500;
+            font-size: 0.95rem;
+            border-bottom: 1px solid #ffe0c0;
+            display: inline-block;
+            padding-bottom: 8px;
+        }
     </style>
 </head>
 <body>
 
-    <h1>Flavours Bistro</h1>
-    <div style="text-align: center;"><span class="subhead">🍕 ingredientes selecionados · sabor artesanal</span></div>
+    <h1 id="titulo-marca">Flavours Cardápio</h1>
+    <div class="subhead-container">
+        <span class="subhead" id="subtitulo-marca">ingredientes selecionados · sabor artesanal</span>
+    </div>
 
     <div class="layout-principal">
         <div class="secao-cardapio">
@@ -376,7 +359,7 @@
             <p style="font-size: 11px; text-align: center; margin-top: 12px; color: #ad8a6c;">🔒 Pedido confirmado em tempo real</p>
         </div>
     </div>
-    <footer>🍔 pedidos direto para a cozinha · acompanhe em tempo real</footer>
+    <footer id="footer-marca">pedidos direto para a produção · acompanhe em tempo real</footer>
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
@@ -403,7 +386,28 @@
         const btnPedido = document.getElementById('btn-fechar-pedido');
         const nomeClienteInput = document.getElementById('nome-cliente');
 
-        // 1. Carregar produtos do Firestore com esqueleto e animação suave
+        // --- FILTRO E ADAPTAÇÃO DINÂMICA DA URL MULTI-LOJAS ---
+        const urlParams = new URLSearchParams(window.location.search);
+        const lojaAtual = urlParams.get('loja') || 'lanches'; // Padrão é lanches se abrir puro
+
+        // Objetos de configurações de marca para customizar a interface baseado na URL
+        const infosLojas = {
+            lanches: { titulo: "🍔 Flavours Bistro", sub: "burgers artesanais · batata frita · sabor incomparável", foot: "🍔 burgers direto para a chapa · acompanhe em tempo real" },
+            doces: { titulo: "🍰 Flavours Doceria", sub: "confeitaria fina · tortas · doces gourmets", foot: "🍰 sobremesas direto para a confeitaria · acompanhe em tempo real" },
+            pizzas: { titulo: "🍕 Flavours Pizzaria", sub: "pizzas artesanais · forno a lenha · massa de longa fermentação", foot: "🍕 pizzas direto para o forno · acompanhe em tempo real" },
+            esfihas: { titulo: "🥙 Flavours Esfiharia", sub: "esfihas abertas · tempero oriental autêntico · assadas na hora", foot: "🥙 esfihas direto para o forno · acompanhe em tempo real" },
+            pasteis: { titulo: "🥟 Flavours Pastelaria", sub: "pastéis crocantes · recheio generoso · massa sequinha", foot: "🥟 pastéis direto para a fritadeira · acompanhe em tempo real" },
+            sucos: { titulo: "🥤 Flavours Sucos & Bebidas", sub: "sucos naturais · polpas selecionadas · refrescância pura", foot: "🥤 bebidas preparadas na hora · acompanhe em tempo real" }
+        };
+
+        // Aplica as customizações textuais na tela
+        const configAtiva = infosLojas[lojaAtual] || infosLojas['lanches'];
+        document.getElementById('titulo-marca').innerText = configAtiva.titulo;
+        document.getElementById('subtitulo-marca').innerText = configAtiva.sub;
+        document.getElementById('footer-marca').innerText = configAtiva.foot;
+
+
+        // 1. Carregar produtos do Firestore aplicando filtro inteligente por comércio
         onSnapshot(collection(db, "produtos"), (snapshot) => {
             if (snapshot.empty) {
                 cardapioDiv.innerHTML = `<div style="grid-column:1/-1; text-align:center; padding:40px;">🍂 Nenhum produto disponível no momento</div>`;
@@ -417,32 +421,40 @@
                 const produto = doc.data();
                 const id = doc.id;
                 
-                produtosDoBanco.push({ id, ...produto });
+                // MUDANÇA ESSENCIAL: O cardápio só renderiza os itens que pertencem a essa loja específica
+                if (produto.comercio === lojaAtual) {
+                    produtosDoBanco.push({ id, ...produto });
 
-                const imgUrl = produto.imagemUrl && produto.imagemUrl.trim() !== "" 
-                    ? produto.imagemUrl 
-                    : "https://images.unsplash.com/photo-1506354666786-959d6d497f1a?w=400&h=300&fit=crop";
-                
-                const descricaoCurta = produto.descricao ? produto.descricao.substring(0, 65) : "Delicioso prato preparado com alta qualidade";
-                
-                cardapioDiv.innerHTML += `
-                    <div class="card-produto">
-                        <div class="img-wrapper">
-                            <img src="${imgUrl}" alt="${produto.nome}" loading="lazy" onerror="this.src='https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=400&h=300&fit=crop'">
-                        </div>
-                        <div class="info">
-                            <div>
-                                <h3>${produto.nome}</h3>
-                                <div class="descricao">${descricaoCurta}</div>
+                    const imgUrl = produto.imagemUrl && produto.imagemUrl.trim() !== "" 
+                        ? produto.imagemUrl 
+                        : "https://images.unsplash.com/photo-1506354666786-959d6d497f1a?w=400&h=300&fit=crop";
+                    
+                    const descricaoCurta = produto.descricao ? produto.descricao.substring(0, 65) : "Delicioso prato preparado com alta qualidade";
+                    
+                    cardapioDiv.innerHTML += `
+                        <div class="card-produto">
+                            <div class="img-wrapper">
+                                <img src="${imgUrl}" alt="${produto.nome}" loading="lazy" onerror="this.src='https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=400&h=300&fit=crop'">
                             </div>
-                            <div>
-                                <div class="preco">R$ ${produto.preco.toFixed(2).replace('.', ',')}</div>
-                                <button class="btn btn-add" data-id="${id}">+ Adicionar ao carrinho</button>
+                            <div class="info">
+                                <div>
+                                    <h3>${produto.nome}</h3>
+                                    <div class="descricao">${descricaoCurta}</div>
+                                </div>
+                                <div>
+                                    <div class="preco">R$ ${produto.preco.toFixed(2).replace('.', ',')}</div>
+                                    <button class="btn btn-add" data-id="${id}">+ Adicionar ao carrinho</button>
+                                </div>
                             </div>
                         </div>
-                    </div>
-                `;
+                    `;
+                }
             });
+
+            // Se existirem produtos no banco, mas nenhum for do comércio ativo na URL
+            if (produtosDoBanco.length === 0) {
+                cardapioDiv.innerHTML = `<div style="grid-column:1/-1; text-align:center; padding:40px; color:#9b7b64;">🍂 Nenhum produto cadastrado para este setor ainda.</div>`;
+            }
 
             document.querySelectorAll('.btn-add').forEach(botao => {
                 botao.onclick = (e) => {
@@ -456,7 +468,7 @@
             cardapioDiv.innerHTML = `<div style="grid-column:1/-1; text-align:center; padding:40px;">⚠️ Erro ao carregar cardápio. Recarregue a página.</div>`;
         });
 
-        // 2. Adicionar item com animação de feedback visual
+        // 2. Adicionar item ao carrinho local
         function adicionarItem(id) {
             const produtoItem = produtosDoBanco.find(p => p.id === id);
             if (!produtoItem) return;
@@ -476,7 +488,6 @@
 
             atualizarInterfaceCarrinho();
             
-            // micro interação (feedback)
             const btn = document.querySelector(`.btn-add[data-id="${id}"]`);
             if (btn) {
                 const originalText = btn.innerHTML;
@@ -485,7 +496,7 @@
             }
         }
 
-        // 3. Remover item individualmente (UX extra)
+        // 3. Remover item completamente
         function removerItemCompletamente(id) {
             carrinho = carrinho.filter(item => item.id !== id);
             atualizarInterfaceCarrinho();
@@ -503,7 +514,7 @@
             atualizarInterfaceCarrinho();
         }
 
-        // 4. Atualizar carrinho com design moderno + controles
+        // 4. Atualizar interface do carrinho de compras lateral
         function atualizarInterfaceCarrinho() {
             if (carrinho.length === 0) {
                 itensCarrinhoDiv.innerHTML = '<div class="empty-cart-message">🛒 Seu carrinho está vazio · adicione pratos incríveis ✨</div>';
@@ -537,7 +548,6 @@
                 itensCarrinhoDiv.appendChild(itemDiv);
             });
 
-            // eventos dinâmicos nos botões
             document.querySelectorAll('.qty-btn.minus').forEach(btn => {
                 btn.onclick = (e) => {
                     const id = btn.getAttribute('data-id');
@@ -561,12 +571,11 @@
             btnPedido.disabled = false;
         }
 
-        // 5. Função para enviar pedido com animação, redirecionamento elegante e com ID do documento
+        // 5. Enviar pedido associando dinamicamente a tag da loja ativa
         document.getElementById('btn-fechar-pedido').onclick = async () => {
             const nomeCliente = nomeClienteInput.value.trim();
 
             if (!nomeCliente) {
-                // alerta estilizado no lugar de prompt
                 const alertBox = document.createElement('div');
                 alertBox.textContent = "🍽️ Por favor, informe seu nome ou número da mesa para enviar o pedido!";
                 alertBox.style.position = "fixed";
@@ -603,7 +612,9 @@
             botao.innerText = "⏳ Enviando para cozinha...";
 
             try {
+                // SALVA O PEDIDO NO BANCO CARIMBANDO COMPROVADAMENTE QUAL LOJA DEVE RECEBÊ-LO
                 const resultado = await addDoc(collection(db, "pedidos"), {
+                    comercio: lojaAtual, // Tag multi-lojas ('lanches', 'doces', 'pizzas', 'esfihas', 'pasteis', 'sucos')
                     cliente: nomeCliente,
                     itens: carrinho.map(item => ({
                         id: item.id,
@@ -617,15 +628,11 @@
                     timestamp: Date.now()
                 });
 
-                // Limpeza e reset
                 carrinho = [];
                 nomeClienteInput.value = "";
                 atualizarInterfaceCarrinho();
 
-                // Redireciona para página de status com ID do documento (criação automática de status.html precisa existir)
-                // Como o status.html não foi fornecido, mas o desafio pede redirecionamento: faremos redirecionamento para página dinâmica
-                // Para funcionar perfeitamente, criamos um fallback elegante: se não existir status.html, pelo menos mostra mensagem e redireciona para uma tela genérica.
-                // Mas vou manter o redirecionamento com ID. (presumindo que status.html exista ou será criado)
+                // Redireciona o cliente para a tela de status do seu respectivo pedido
                 window.location.href = `status.html?id=${resultado.id}`;
                 
             } catch (erro) {
@@ -640,14 +647,9 @@
             }
         };
 
-        // inicialização com verificação de carregamento rápido
         window.addEventListener('load', () => {
-            // Ajusta qualquer eventualidade
             if (carrinho.length === 0) atualizarInterfaceCarrinho();
         });
-        
-        // cleanup visual adicional -> ativar campos
-        // evitar qualquer comportamento inconsistente
     </script>
 </body>
 </html>
