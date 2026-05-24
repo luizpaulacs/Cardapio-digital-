@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🤵 Painel de Atendimento</title>
+    <style>
+        body { font-family: 'Segoe UI', system-ui, sans-serif; background-color: #f4f6f9; margin: 0; padding: 20px; color: #333; }
+        .container { max-width: 1000px; margin: 0 auto; }
+        .resumo-cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin-bottom: 25px; }
+        .card-mini { background: white; padding: 15px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); text-align: center; }
+        .card-mini h3 { margin: 0; font-size: 14px; color: #777; }
+        .card-mini p { margin: 5px 0 0 0; font-size: 24px; font-weight: bold; color: #2c3e50; }
+        
+        .tabela-pedidos { width: 100%; border-collapse: collapse; background: white; border-radius: 8px; overflow: hidden; box-shadow: 0 4px 10px rgba(0,0,0,0.05); }
+        .tabela-pedidos th, .tabela-pedidos td { padding: 12px 15px; text-align: left; border-bottom: 1px solid #eee; }
+        .tabela-pedidos th { background-color: #2c3e50; color: white; }
+        
+        .badge { padding: 4px 8px; border-radius: 4px; font-size: 12px; font-weight: bold; }
+        .pendente { background: #fef9e7; color: #d35400; }
+        .em_preparo { background: #ebf5fb; color: #2980b9; }
+        .concluido { background: #e8f8f5; color: #27ae60; }
+        
+        .btn-entregar { background-color: #2ecc71; color: white; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer; font-weight: bold; }
+        .btn-entregar:hover { background-color: #27ae60; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🤵 Controle de Atendimento</h1>
+        
+        <!-- Painel numérico para controle de quantidade -->
+        <div class="resumo-cards">
+            <div class="card-mini">
+                <h3>Pedidos Ativos</h3>
+                <p id="qtd-ativos">0</p>
+            </div>
+            <div class="card-mini">
+                <h3>Pedidos Concluídos</h3>
+                <p id="qtd-concluidos">0</p>
+            </div>
+            <div class="card-mini">
+                <h3>Total do Turno</h3>
+                <p id="faturamento-total">R$ 0,00</p>
+            </div>
+        </div>
+
+        <h2>Lista Geral de Pedidos</h2>
+        <table class="tabela-pedidos">
+            <thead>
+                <tr>
+                    <th>Cliente / Mesa</th>
+                    <th>Itens</th>
+                    <th>Total</th>
+                    <th>Status</th>
+                    <th>Ações</th>
+                </tr>
+            </thead>
+            <tbody id="lista-atendimento">
+                <tr><td colspan="5" style="text-align:center;">Carregando pedidos...</td></tr>
+            </tbody>
+        </table>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+        import { getFirestore, collection, onSnapshot, doc, updateDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyBIOTndcpgCqT9YYpEScaDRsqvAPH8p6_Y",
+            authDomain: "cardapio-digital-d87ae.firebaseapp.com",
+            projectId: "cardapio-digital-d87ae",
+            storageBucket: "cardapio-digital-d87ae.firebasestorage.app",
+            messagingSenderId: "26239101821",
+            appId: "1:26239101821:web:66e67a40d74db4beeeba14"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+        const tbody = document.getElementById('lista-atendimento');
+
+        onSnapshot(collection(db, "pedidos"), (snapshot) => {
+            let ativos = 0, concluidos = 0, faturamento = 0;
+            tbody.innerHTML = "";
+
+            // Cria uma lista e ordena do mais recente para o mais antigo no JavaScript (evita erro de índice)
+            let todosPedidos = [];
+            snapshot.forEach(d => todosPedidos.push({ id: d.id, ...d.data() }));
+            todosPedidos.sort((a,b) => (b.criadoEm?.toMillis() || 0) - (a.criadoEm?.toMillis() || 0));
+
+            todosPedidos.forEach((pedido) => {
+                // Cálculos estatísticos para os contadores
+                if (pedido.status === "concluido") {
+                    concluidos++;
+                    faturamento += pedido.total || 0;
+                } else {
+                    ativos++;
+                }
+
+                // Monta texto dos itens
+                const itensTxt = pedido.itens.map(i => `${i.quantidade}x ${i.nome}`).join(', ');
+                const statusFormatado = pedido.status === 'pendente' ? 'Aguardando' : (pedido.status === 'em_preparo' ? 'Na Cozinha' : 'Pronto');
+
+                tbody.innerHTML += `
+                    <tr>
+                        <td><strong>${pedido.cliente}</strong></td>
+                        <td><small>${itensTxt}</small></td>
+                        <td>R$ ${pedido.total.toFixed(2).replace('.',',')}</td>
+                        <td><span class="badge ${pedido.status}">${statusTexto(pedido.status)}</span></td>
+                        <td>
+                            ${pedido.status !== 'concluido' ? `<button class="btn-entregar" data-id="${pedido.id}">Finalizar/Entregar</button>` : '✔️ Entregue'}
+                        </td>
+                    </tr>
+                `;
+            });
+
+            // Atualiza os contadores na tela do atendente
+            document.getElementById('qtd-ativos').innerText = ativos;
+            document.getElementById('qtd-concluidos').innerText = concluidos;
+            document.getElementById('faturamento-total').innerText = faturamento.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+
+            // Evento dos botões de Finalizar
+            document.querySelectorAll('.btn-entregar').forEach(btn => {
+                btn.onclick = async (e) => {
+                    const id = e.target.getAttribute('data-id');
+                    await updateDoc(doc(db, "pedidos", id), { status: "concluido" });
+                };
+            });
+        });
+
+        function statusTexto(status) {
+            if(status === 'pendente') return 'Pendente';
+            if(status === 'em_preparo') return 'Cozinhando';
+            return 'Finalizado';
+        }
+    </script>
+</body>
+</html>
