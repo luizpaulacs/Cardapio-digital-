@@ -53,12 +53,9 @@
             gap: 10px;
         }
 
-        .box-status h2::before {
-            content: "🍔";
+        /* Removido o pseudo-elemento fixo h2::before para controlarmos dinamicamente o emoji por JS */
+        .header-emoji {
             font-size: 1.8rem;
-            background: none;
-            -webkit-background-clip: unset;
-            color: #e67e22;
         }
 
         .num-pedido {
@@ -143,10 +140,6 @@
             letter-spacing: 0.5px;
         }
 
-        .passo {
-            position: relative;
-        }
-
         .passo.ativo {
             background: linear-gradient(135deg, #e67e22, #d35400);
             box-shadow: 0 0 0 4px rgba(230, 126, 34, 0.25), 0 4px 12px rgba(211, 84, 0, 0.3);
@@ -158,7 +151,7 @@
             box-shadow: 0 2px 8px rgba(46, 204, 113, 0.3);
         }
 
-        /* Ícones internos nos passos (opcional) */
+        /* Ícones internos nos passos */
         .passo[data-step="1"]::before { content: "📋"; font-size: 1rem; }
         .passo[data-step="2"]::before { content: "🍳"; font-size: 1rem; }
         .passo[data-step="3"]::before { content: "🎉"; font-size: 1rem; }
@@ -168,6 +161,9 @@
         .passo.ativo[data-step="1"]::before { content: "📥"; }
         .passo.ativo[data-step="2"]::before { content: "👨‍🍳"; }
         .passo.ativo[data-step="3"]::before { content: "🍔"; }
+
+        /* Altera o ícone do último passo ativo caso mude o tema para doces por JavaScript */
+        .box-status.tema-doces-ativo .passo.ativo[data-step="3"]::before { content: "🧁"; }
 
         /* Mensagem de rodapé */
         .info-footer {
@@ -198,84 +194,39 @@
 
         /* Responsividade */
         @media (max-width: 550px) {
-            body {
-                padding: 16px;
-            }
-            .box-status {
-                padding: 28px 20px;
-                border-radius: 36px;
-            }
-            .box-status h2 {
-                font-size: 1.4rem;
-            }
-            #texto-status {
-                font-size: 1.2rem;
-            }
-            #animacao-status {
-                font-size: 56px;
-            }
-            .passo {
-                width: 38px;
-                height: 38px;
-                font-size: 0.9rem;
-            }
-            .passo-label {
-                font-size: 0.55rem;
-                bottom: -24px;
-            }
-            .linha-tempo::before {
-                width: calc(100% - 30px);
-            }
+            body { padding: 16px; }
+            .box-status { padding: 28px 20px; border-radius: 36px; }
+            .box-status h2 { font-size: 1.4rem; }
+            #texto-status { font-size: 1.2rem; }
+            #animacao-status { font-size: 56px; }
+            .passo { width: 38px; height: 38px; font-size: 0.9rem; }
+            .passo-label { font-size: 0.55rem; bottom: -24px; }
+            .linha-tempo::before { width: calc(100% - 30px); }
         }
 
         @media (max-width: 450px) {
-            .passo-label {
-                font-size: 0.5rem;
-                white-space: normal;
-                width: 60px;
-                text-align: center;
-                line-height: 1.2;
-            }
-            .passo {
-                margin-top: 8px;
-            }
+            .passo-label { font-size: 0.5rem; white-space: normal; width: 60px; text-align: center; line-height: 1.2; }
+            .passo { margin-top: 8px; }
         }
 
-        /* Animações suaves */
         @keyframes pulseGlow {
             0% { box-shadow: 0 0 0 0 rgba(230, 126, 34, 0.4);}
             70% { box-shadow: 0 0 0 12px rgba(230, 126, 34, 0);}
             100% { box-shadow: 0 0 0 0 rgba(230, 126, 34, 0);}
         }
 
-        .passo.ativo {
-            animation: pulseGlow 1.5s infinite;
-        }
-
-        /* Loader inicial */
-        .loading-shimmer {
-            background: linear-gradient(90deg, #f0ede8, #fff8f0, #f0ede8);
-            background-size: 200% 100%;
-            animation: shimmer 1.2s infinite;
-            border-radius: 28px;
-        }
-
-        @keyframes shimmer {
-            0% { background-position: 200% 0; }
-            100% { background-position: -200% 0; }
-        }
+        .passo.ativo { animation: pulseGlow 1.5s infinite; }
     </style>
 </head>
 <body>
 
-    <div class="box-status">
-        <h2>Status do seu Pedido</h2>
+    <div class="box-status" id="status-card">
+        <h2><span id="loja-emoji" class="header-emoji">🍔</span> Status do seu Pedido</h2>
         <div class="num-pedido" id="id-pedido">🆔 Carregando pedido...</div>
         
         <div id="animacao-status">⏳</div>
         <div id="texto-status">Conectando ao restaurante...</div>
 
-        <!-- Linha do tempo gráfica com labels -->
         <div class="linha-tempo">
             <div class="passo" id="p1" data-step="1">
                 <span class="passo-label">Recebido</span>
@@ -292,7 +243,7 @@
             <p>
                 <span>🔄 Atualização automática</span>
                 <span class="live-badge">Ao vivo</span>
-                <span>🍔 Acompanhe em tempo real</span>
+                <span id="txt-footer-nicho">🍔 Acompanhe em tempo real</span>
             </p>
         </div>
     </div>
@@ -318,12 +269,19 @@
         const idPedido = parametros.get('id');
 
         // Elementos DOM
+        const statusCard = document.getElementById('status-card');
+        const lojaEmoji = document.getElementById('loja-emoji');
+        const txtFooterNicho = document.getElementById('txt-footer-nicho');
+        
         const idPedidoSpan = document.getElementById('id-pedido');
         const txtStatus = document.getElementById('texto-status');
         const animeDiv = document.getElementById('animacao-status');
         const p1 = document.getElementById('p1');
         const p2 = document.getElementById('p2');
         const p3 = document.getElementById('p3');
+
+        // Variável global de suporte para saber o nicho do pedido
+        let nichoPedido = "lanches";
 
         if (idPedido) {
             // Mostra ID resumido amigável
@@ -341,6 +299,20 @@
                 }
 
                 const dados = docSnap.data();
+                
+                // MÁGICA MULTI-LOJAS AUTOMÁTICA: Detecta o carimbo do banco e ajusta o visual
+                if (dados.comercio === "doces") {
+                    nichoPedido = "doces";
+                    lojaEmoji.innerText = "🍰";
+                    txtFooterNicho.innerText = "🍰 Acompanhe seus doces em tempo real";
+                    statusCard.classList.add("tema-doces-ativo"); // Modifica o ícone do passo 3 por CSS
+                } else {
+                    nichoPedido = "lanches";
+                    lojaEmoji.innerText = "🍔";
+                    txtFooterNicho.innerText = "🍔 Acompanhe seu burger em tempo real";
+                    statusCard.classList.remove("tema-doces-ativo");
+                }
+
                 atualizarTelaStatus(dados.status);
             }, (error) => {
                 console.error("Erro ao buscar pedido:", error);
@@ -365,35 +337,39 @@
             p3.style.animation = 'none';
             
             if (status === "pendente") {
-                txtStatus.innerText = "📋 Pedido recebido! Aguardando confirmação da cozinha...";
+                txtStatus.innerText = nichoPedido === "doces" 
+                    ? "📋 Pedido recebido! Aguardando confirmação da confeitaria..."
+                    : "📋 Pedido recebido! Aguardando confirmação da cozinha...";
                 animeDiv.innerText = "📥📋";
                 p1.classList.add("ativo");
                 p1.style.animation = '';
-                // status de pendente: apenas passo 1 ativo
             } 
             else if (status === "em_preparo") {
-                txtStatus.innerText = "👨‍🍳 Seu pedido está sendo preparado com muito cuidado!";
-                animeDiv.innerText = "🔥👨‍🍳";
+                txtStatus.innerText = nichoPedido === "doces"
+                    ? "🧁 Seus doces estão sendo preparados na área de confeitaria!"
+                    : "👨‍🍳 Seu pedido está sendo preparado com muito cuidado!";
+                animeDiv.innerText = nichoPedido === "doces" ? "👩‍🍳✨" : "🔥👨‍🍳";
                 p1.classList.add("concluido");
                 p2.classList.add("ativo");
                 p2.style.animation = '';
             } 
             else if (status === "concluido") {
-                txtStatus.innerText = "🎉 Pedido pronto! Retire no balcão. Bom apetite!";
-                animeDiv.innerText = "🍔✨🥳";
+                txtStatus.innerText = nichoPedido === "doces"
+                    * "🎉 Seus doces estão prontos! Retire no balcão da confeitaria. 🥰"
+                    : "🎉 Pedido pronto! Retire no balcão. Bom apetite!";
+                animeDiv.innerText = nichoPedido === "doces" ? "🍰✨🥳" : "🍔✨🥳";
                 p1.classList.add("concluido");
                 p2.classList.add("concluido");
                 p3.classList.add("concluido");
                 p3.classList.add("ativo");
                 p3.style.animation = '';
                 
-                // efeito adicional de confete simbólico (apenas visual)
+                // Micro-interação visual de escala
                 animeDiv.style.transform = "scale(1.1)";
                 setTimeout(() => { if(animeDiv) animeDiv.style.transform = "scale(1)"; }, 400);
             }
             
-            // Força atualização dos pseudo-elementos (reflow opcional)
-            void p1.offsetHeight;
+            void p1.offsetHeight; // Força reflow básico de segurança para navegadores mobile
         }
     </script>
 </body>

@@ -34,6 +34,12 @@
             box-shadow: 0 12px 30px rgba(0, 0, 0, 0.12);
             position: relative;
             overflow: hidden;
+            transition: background 0.3s ease;
+        }
+
+        /* Variação de cor para o Header se for Doces */
+        .admin-header.tema-doces {
+            background: linear-gradient(115deg, #4a2c3a 0%, #2a1420 100%);
         }
 
         .admin-header::before {
@@ -99,6 +105,11 @@
 
         .tabela-produtos thead tr {
             background: linear-gradient(105deg, #2c3e50, #243342);
+        }
+
+        /* Variação de cor da tabela para o tema doces */
+        .tema-doces .tabela-produtos thead tr {
+            background: linear-gradient(105deg, #4a2c3a, #361b28);
         }
 
         .tabela-produtos th {
@@ -215,29 +226,13 @@
 
         /* Estilo para mobile (transformar tabela em cards) */
         @media (max-width: 780px) {
-            body {
-                padding: 16px;
-            }
-
-            .admin-header {
-                padding: 20px 24px;
-            }
-
-            .admin-header h1 {
-                font-size: 1.5rem;
-            }
-
-            .table-wrapper {
-                border-radius: 24px;
-                overflow-x: auto;
-            }
-
-            .tabela-produtos {
-                min-width: 680px;
-            }
+            body { padding: 16px; }
+            .admin-header { padding: 20px 24px; }
+            .admin-header h1 { font-size: 1.5rem; }
+            .table-wrapper { border-radius: 24px; overflow-x: auto; }
+            .tabela-produtos { min-width: 680px; }
         }
 
-        /* Para tablets pequenos, mantém tabela responsiva com scroll horizontal */
         @media (max-width: 900px) {
             .table-wrapper {
                 overflow-x: auto;
@@ -245,7 +240,6 @@
             }
         }
 
-        /* Loading e empty state */
         .loading-row td {
             text-align: center;
             padding: 48px !important;
@@ -261,12 +255,11 @@
             font-weight: 500;
         }
 
-        /* Toast de notificação customizada */
+        /* Toast de notificação */
         .toast-notify {
             position: fixed;
             bottom: 24px;
             right: 24px;
-            background: #1e2f3f;
             color: white;
             padding: 12px 24px;
             border-radius: 60px;
@@ -279,48 +272,26 @@
             box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2);
             animation: slideInRight 0.3s ease;
             backdrop-filter: blur(8px);
-            background: rgba(30, 47, 63, 0.95);
         }
 
         @keyframes slideInRight {
-            from {
-                opacity: 0;
-                transform: translateX(40px);
-            }
-            to {
-                opacity: 1;
-                transform: translateX(0);
-            }
+            from { opacity: 0; transform: translateX(40px); }
+            to { opacity: 1; transform: translateX(0); }
         }
 
-        /* ícones e ajustes */
-        .acao-cell {
-            white-space: nowrap;
-        }
-
-        .helper-icon {
-            display: inline-block;
-            width: 14px;
-            text-align: center;
-        }
-
-        footer {
-            text-align: center;
-            margin-top: 32px;
-            font-size: 0.7rem;
-            color: #9cb1c0;
-        }
+        .acao-cell { white-space: nowrap; }
+        footer { text-align: center; margin-top: 32px; font-size: 0.7rem; color: #9cb1c0; }
     </style>
 </head>
 <body>
 
-    <div class="container">
-        <div class="admin-header">
-            <h1>Gerenciar Cardápio</h1>
+    <div class="container" id="admin-container">
+        <div class="admin-header" id="header-area">
+            <h1 id="titulo-admin">Gerenciar Cardápio</h1>
             <p>
                 <span>✨ Edite preços e imagens dos produtos</span>
                 <span class="badge-live">🔄 Tempo real</span>
-                <span>📡 Mudanças refletem instantaneamente</span>
+                <span id="txt-sub-loja">📡 Mudanças refletem instantaneamente</span>
             </p>
         </div>
 
@@ -368,6 +339,26 @@
         const tbody = document.getElementById('lista-admin');
         const produtosRef = collection(db, "produtos");
 
+        // --- INTEGRAÇÃO PARÂMETRO MULTI-LOJAS PELA URL ---
+        const urlParams = new URLSearchParams(window.location.search);
+        const lojaAtual = urlParams.get('loja') || 'lanches'; // Fallback padrão para lanches
+
+        // Altera de forma dinâmica o tema estético da tabela de gerenciamento
+        const headerArea = document.getElementById('header-area');
+        const adminContainer = document.getElementById('admin-container');
+        const tituloAdmin = document.getElementById('titulo-admin');
+        const txtSubLoja = document.getElementById('txt-sub-loja');
+
+        if (lojaAtual === 'doces') {
+            headerArea.classList.add('tema-doces');
+            adminContainer.classList.add('tema-doces');
+            tituloAdmin.innerText = "Gerenciar Confeitaria";
+            txtSubLoja.innerText = "🍰 Editando o setor de Doces e Sobremesas";
+        } else {
+            tituloAdmin.innerText = "Gerenciar Lanchonete";
+            txtSubLoja.innerText = "🍔 Editando o setor de Lanches e Bebidas";
+        }
+
         // Função para mostrar notificações elegantes
         function showToast(message, isError = false) {
             const existingToast = document.querySelector('.toast-notify');
@@ -388,7 +379,7 @@
             }, 2800);
         }
 
-        // Atualização em tempo real dos produtos
+        // Atualização em tempo real dos produtos aplicando o filtro modular do comércio
         onSnapshot(produtosRef, (snapshot) => {
             if (snapshot.empty) {
                 tbody.innerHTML = `<tr class="empty-row"><td colspan="5">📭 Nenhum produto cadastrado ainda. Adicione pelo painel de cadastro.</td></tr>`;
@@ -396,136 +387,139 @@
             }
 
             tbody.innerHTML = "";
+            let totalExibidos = 0;
 
             snapshot.forEach((docItem) => {
                 const produto = docItem.data();
                 const id = docItem.id;
-                const imagemUrl = produto.imagemUrl || 'https://placehold.co/400x300?text=Sem+Imagem';
 
-                const tr = document.createElement('tr');
-                tr.setAttribute('data-id', id);
-                
-                // Célula da imagem
-                const tdImg = document.createElement('td');
-                tdImg.style.textAlign = 'center';
-                const img = document.createElement('img');
-                img.src = imagemUrl;
-                img.alt = produto.nome;
-                img.className = 'img-mini';
-                img.onerror = () => { img.src = 'https://placehold.co/400x300?text=Imagem+Indispon%C3%ADvel'; };
-                tdImg.appendChild(img);
-                
-                // Célula nome + descrição
-                const tdInfo = document.createElement('td');
-                tdInfo.innerHTML = `
-                    <div class="produto-nome">${escapeHtml(produto.nome)}</div>
-                    <div class="produto-desc">${escapeHtml(produto.descricao || 'Sem descrição cadastrada')}</div>
-                `;
-                
-                // Célula preço (input)
-                const tdPreco = document.createElement('td');
-                const precoInput = document.createElement('input');
-                precoInput.type = 'number';
-                precoInput.step = '0.01';
-                precoInput.min = '0';
-                precoInput.value = produto.preco || 0;
-                precoInput.className = 'input-preco';
-                precoInput.id = `preco-${id}`;
-                tdPreco.appendChild(precoInput);
-                
-                // Célula URL (input)
-                const tdUrl = document.createElement('td');
-                const urlInput = document.createElement('input');
-                urlInput.type = 'text';
-                urlInput.value = produto.imagemUrl || '';
-                urlInput.placeholder = 'https://exemplo.com/foto.jpg';
-                urlInput.className = 'input-url';
-                urlInput.id = `url-${id}`;
-                tdUrl.appendChild(urlInput);
-                
-                // Célula ação (botão salvar)
-                const tdAcao = document.createElement('td');
-                tdAcao.className = 'acao-cell';
-                const btnSalvar = document.createElement('button');
-                btnSalvar.innerHTML = '💾 Salvar';
-                btnSalvar.className = 'btn-salvar';
-                btnSalvar.id = `btn-${id}`;
-                tdAcao.appendChild(btnSalvar);
-                
-                tr.appendChild(tdImg);
-                tr.appendChild(tdInfo);
-                tr.appendChild(tdPreco);
-                tr.appendChild(tdUrl);
-                tr.appendChild(tdAcao);
-                
-                tbody.appendChild(tr);
-                
-                // Evento do botão salvar (apenas para este produto)
-                btnSalvar.addEventListener('click', async (e) => {
-                    e.preventDefault();
-                    const novoPreco = parseFloat(precoInput.value);
-                    const novaUrl = urlInput.value.trim();
+                // FILTRO MULTI-LOJAS: Só monta a linha na tabela se a tag bater com a URL aberta
+                if (produto.comercio === lojaAtual) {
+                    totalExibidos++;
+                    const imagemUrl = produto.imagemUrl || 'https://placehold.co/400x300?text=Sem+Imagem';
+
+                    const tr = document.createElement('tr');
+                    tr.setAttribute('data-id', id);
                     
-                    if (isNaN(novoPreco) || novoPreco < 0) {
-                        showToast("Digite um preço válido (ex: 29,90)", true);
-                        return;
-                    }
+                    // Célula da imagem
+                    const tdImg = document.createElement('td');
+                    tdImg.style.textAlign = 'center';
+                    const img = document.createElement('img');
+                    img.src = imagemUrl;
+                    img.alt = produto.nome;
+                    img.className = 'img-mini';
+                    img.onerror = () => { img.src = 'https://placehold.co/400x300?text=Imagem+Indispon%C3%ADvel'; };
+                    tdImg.appendChild(img);
                     
-                    // Feedback visual no botão
-                    const originalText = btnSalvar.innerHTML;
-                    btnSalvar.innerHTML = '⏳ Salvando...';
-                    btnSalvar.disabled = true;
+                    // Célula nome + descrição
+                    const tdInfo = document.createElement('td');
+                    tdInfo.innerHTML = `
+                        <div class="produto-nome">${escapeHtml(produto.nome)}</div>
+                        <div class="produto-desc">${escapeHtml(produto.descricao || 'Sem descrição cadastrada')}</div>
+                    `;
                     
-                    try {
-                        const produtoRef = doc(db, "produtos", id);
-                        const updates = {
-                            preco: novoPreco,
-                            imagemUrl: novaUrl
-                        };
-                        await updateDoc(produtoRef, updates);
+                    // Célula preço (input)
+                    const tdPreco = document.createElement('td');
+                    const precoInput = document.createElement('input');
+                    precoInput.type = 'number';
+                    precoInput.step = '0.01';
+                    precoInput.min = '0';
+                    precoInput.value = produto.preco || 0;
+                    precoInput.className = 'input-preco';
+                    precoInput.id = `preco-${id}`;
+                    tdPreco.appendChild(precoInput);
+                    
+                    // Célula URL (input)
+                    const tdUrl = document.createElement('td');
+                    const urlInput = document.createElement('input');
+                    urlInput.type = 'text';
+                    urlInput.value = produto.imagemUrl || '';
+                    urlInput.placeholder = 'https://exemplo.com/foto.jpg';
+                    urlInput.className = 'input-url';
+                    urlInput.id = `url-${id}`;
+                    tdUrl.appendChild(urlInput);
+                    
+                    // Célula ação (botão salvar)
+                    const tdAcao = document.createElement('td');
+                    tdAcao.className = 'acao-cell';
+                    const btnSalvar = document.createElement('button');
+                    btnSalvar.innerHTML = '💾 Salvar';
+                    btnSalvar.className = 'btn-salvar';
+                    btnSalvar.id = `btn-${id}`;
+                    tdAcao.appendChild(btnSalvar);
+                    
+                    tr.appendChild(tdImg);
+                    tr.appendChild(tdInfo);
+                    tr.appendChild(tdPreco);
+                    tr.appendChild(tdUrl);
+                    tr.appendChild(tdAcao);
+                    
+                    tbody.appendChild(tr);
+                    
+                    // Evento de clique unificado modular para salvar alterações do item
+                    btnSalvar.onclick = async (e) => {
+                        e.preventDefault();
+                        const novoPreco = parseFloat(precoInput.value);
+                        const novaUrl = urlInput.value.trim();
                         
-                        // Atualiza a imagem localmente na tabela para feedback instantâneo
-                        img.src = novaUrl || 'https://placehold.co/400x300?text=Sem+Imagem';
-                        img.onerror = () => { img.src = 'https://placehold.co/400x300?text=Erro+na+URL'; };
-                        
-                        showToast(`Produto "${produto.nome}" atualizado com sucesso!`);
-                    } catch (error) {
-                        console.error("Erro ao atualizar:", error);
-                        let errorMessage = "Erro ao salvar. Verifique conexão e permissões.";
-                        if (error.message.includes("permission")) {
-                            errorMessage = "Sem permissão de escrita. Ajuste as regras do Firebase.";
+                        if (isNaN(novoPreco) || novoPreco < 0) {
+                            showToast("Digite um preço válido (ex: 29,90)", true);
+                            return;
                         }
-                        showToast(errorMessage, true);
-                    } finally {
-                        btnSalvar.innerHTML = originalText;
-                        btnSalvar.disabled = false;
-                    }
-                });
-                
-                // Opcional: preview dinâmico da URL enquanto digita (muda a imagem ao perder foco)
-                urlInput.addEventListener('blur', () => {
-                    const testUrl = urlInput.value.trim();
-                    if (testUrl && (testUrl.startsWith('http://') || testUrl.startsWith('https://'))) {
-                        const tempImg = new Image();
-                        tempImg.onload = () => {
-                            img.src = testUrl;
-                        };
-                        tempImg.onerror = () => {
-                            // não atualiza se URL quebrada, apenas mantém anterior
-                        };
-                        tempImg.src = testUrl;
-                    } else if (testUrl === '') {
-                        img.src = 'https://placehold.co/400x300?text=Sem+Imagem';
-                    }
-                });
+                        
+                        const originalText = btnSalvar.innerHTML;
+                        btnSalvar.innerHTML = '⏳ Salvando...';
+                        btnSalvar.disabled = true;
+                        
+                        try {
+                            const produtoRef = doc(db, "produtos", id);
+                            const updates = {
+                                preco: novoPreco,
+                                imagemUrl: novaUrl
+                            };
+                            await updateDoc(produtoRef, updates);
+                            
+                            img.src = novaUrl || 'https://placehold.co/400x300?text=Sem+Imagem';
+                            img.onerror = () => { img.src = 'https://placehold.co/400x300?text=Erro+na+URL'; };
+                            
+                            showToast(`Produto "${produto.nome}" atualizado com sucesso!`);
+                        } catch (error) {
+                            console.error("Erro ao atualizar:", error);
+                            let errorMessage = "Erro ao salvar. Verifique conexão e permissões.";
+                            if (error.message.includes("permission")) {
+                                errorMessage = "Sem permissão de escrita. Ajuste as regras do Firebase.";
+                            }
+                            showToast(errorMessage, true);
+                        } finally {
+                            btnSalvar.innerHTML = originalText;
+                            btnSalvar.disabled = false;
+                        }
+                    };
+                    
+                    // Preview reativo da imagem ao perder o foco (blur) do campo de input
+                    urlInput.onblur = () => {
+                        const testUrl = urlInput.value.trim();
+                        if (testUrl && (testUrl.startsWith('http://') || testUrl.startsWith('https://'))) {
+                            const tempImg = new Image();
+                            tempImg.onload = () => { img.src = testUrl; };
+                            tempImg.src = testUrl;
+                        } else if (testUrl === '') {
+                            img.src = 'https://placehold.co/400x300?text=Sem+Imagem';
+                        }
+                    };
+                }
             });
+
+            // Se a coleção tiver produtos, mas nenhum bater com a categoria selecionada pela URL
+            if (totalExibidos === 0) {
+                tbody.innerHTML = `<tr class="empty-row"><td colspan="5">📭 Nenhum produto desta categoria cadastrado ainda. Use a tela de cadastro primeiro.</td></tr>`;
+            }
         }, (error) => {
             console.error("Erro no snapshot:", error);
             tbody.innerHTML = `<tr class="empty-row"><td colspan="5">⚠️ Erro ao carregar produtos. Verifique sua conexão e regras de segurança do Firebase.</td></tr>`;
             showToast("Falha na conexão com o banco de dados", true);
         });
         
-        // Função de escape para evitar XSS
         function escapeHtml(str) {
             if (!str) return '';
             return str.replace(/[&<>]/g, function(m) {
@@ -535,9 +529,6 @@
                 return m;
             });
         }
-        
-        // Pequeno helper para estilizar número no input (placeholder)
-        console.log("Painel Admin Gerenciar Cardápio - Modo Moderno Ativado");
     </script>
 </body>
 </html>

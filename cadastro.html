@@ -109,6 +109,7 @@
 
         input[type="text"],
         input[type="number"],
+        select,
         textarea {
             width: 100%;
             padding: 14px 16px;
@@ -122,7 +123,18 @@
             outline: none;
         }
 
+        select {
+            appearance: none;
+            background-image: url("data:image/svg+xml;charset=UTF-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%235d6e7e' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: right 18px center;
+            background-size: 16px;
+            padding-right: 45px;
+            cursor: pointer;
+        }
+
         input:focus,
+        select:focus,
         textarea:focus {
             border-color: #e67e22;
             box-shadow: 0 0 0 4px rgba(230, 126, 34, 0.12);
@@ -237,25 +249,12 @@
 
         /* Responsividade mobile */
         @media (max-width: 560px) {
-            body {
-                padding: 16px;
-            }
-            .form-wrapper {
-                padding: 24px 20px;
-            }
-            .header-admin {
-                padding: 22px 24px;
-            }
-            .header-admin h1 {
-                font-size: 1.4rem;
-            }
-            .preview-area {
-                flex-direction: column;
-                align-items: flex-start;
-            }
-            .btn-cadastrar {
-                padding: 14px 20px;
-            }
+            body { padding: 16px; }
+            .form-wrapper { padding: 24px 20px; }
+            .header-admin { padding: 22px 24px; }
+            .header-admin h1 { font-size: 1.4rem; }
+            .preview-area { flex-direction: column; align-items: flex-start; }
+            .btn-cadastrar { padding: 14px 20px; }
         }
 
         /* Loading spinner interno */
@@ -287,15 +286,6 @@
             color: #e67e22;
             text-decoration: none;
         }
-
-        /* micro-interação */
-        .field-icon {
-            position: absolute;
-            right: 18px;
-            top: 42px;
-            color: #cbd5e1;
-            font-size: 1rem;
-        }
     </style>
 </head>
 <body>
@@ -306,15 +296,28 @@
             <div class="subhead">
                 <span>🔐 Painel Administrativo</span>
                 <span>⚡ Sincronização automática</span>
-                <span>🍔 Cardápio digital</span>
+                <span>🛍️ Central Multi-lojas</span>
             </div>
         </div>
 
         <div class="form-wrapper">
             <form id="form-cadastro">
+                <!-- MENU EXPANDIDO PARA TODAS AS OPERAÇÕES DE MARCA -->
+                <div class="form-grupo">
+                    <label for="comercio">Destino do Produto <span class="required">*</span></label>
+                    <select id="comercio" required>
+                        <option value="lanches" selected>🍔 Lanchonete (Flavours Bistro)</option>
+                        <option value="doces">🍰 Doceria (Flavours Doceria)</option>
+                        <option value="pizzas">🍕 Pizzaria</option>
+                        <option value="esfihas">🥙 Esfiharia</option>
+                        <option value="pasteis">🥟 Pastelaria</option>
+                        <option value="sucos">🥤 Sucos & Bebidas</option>
+                    </select>
+                </div>
+
                 <div class="form-grupo">
                     <label for="nome">Nome do produto <span class="required">*</span></label>
-                    <input type="text" id="nome" required placeholder="Ex: Burger Artesanal Duplo" autocomplete="off">
+                    <input type="text" id="nome" required placeholder="Ex: Pizza Calabresa Especial" autocomplete="off">
                 </div>
 
                 <div class="form-grupo">
@@ -349,7 +352,7 @@
 
         <div id="status-mensagem"></div>
         <div class="footer-note">
-            🚀 O produto aparecerá instantaneamente no cardápio do cliente • Firebase Firestore
+            🚀 O produto aparecerá instantaneamente no cardápio do respectivo cliente • Firebase Firestore
         </div>
     </div>
 
@@ -373,12 +376,21 @@
         const btnSubmit = document.getElementById('btn-submit');
         const statusMsgDiv = document.getElementById('status-mensagem');
         
-        // Preview de imagem
         const imgUrlInput = document.getElementById('imagemUrl');
         const previewArea = document.getElementById('preview-area');
         const imgPreview = document.getElementById('imgPreview');
 
-        // Função de preview ao digitar URL
+        // Mapeamento de emojis inteligentes para os alertas de sucesso
+        const emojisPorLoja = {
+            lanches: "🍔",
+            doces: "🍰",
+            pizzas: "🍕",
+            esfihas: "🥙",
+            pasteis: "🥟",
+            sucos: "🥤"
+        };
+
+        // Preview reativo da imagem
         imgUrlInput.addEventListener('input', (e) => {
             const url = e.target.value.trim();
             if (url && (url.startsWith('http://') || url.startsWith('https://'))) {
@@ -391,13 +403,12 @@
             } else if (url === '') {
                 previewArea.style.display = 'none';
             } else {
-                // Se URL inválida, mostra área com ícone de erro suave
                 previewArea.style.display = 'flex';
                 imgPreview.src = 'https://placehold.co/400x300?text=URL+inválida';
             }
         });
 
-        // Função para mostrar mensagem de status com estilo moderno
+        // Alertas estilizados na tela
         function mostrarStatus(texto, tipo = 'success') {
             let corBg = '#e8f8f5';
             let corTexto = '#1e6f5c';
@@ -438,6 +449,7 @@
         form.addEventListener('submit', async (e) => {
             e.preventDefault();
             
+            const comercio = document.getElementById('comercio').value;
             const nome = document.getElementById('nome').value.trim();
             const descricao = document.getElementById('descricao').value.trim();
             const precoRaw = document.getElementById('preco').value;
@@ -463,6 +475,7 @@
                 const produtosRef = collection(db, "produtos");
                 
                 await addDoc(produtosRef, {
+                    comercio: comercio, // Injeta o valor correspondente ("lanches", "doces", "pizzas", "esfihas", "pasteis", "sucos")
                     nome: nome,
                     descricao: descricao || "",
                     preco: preco,
@@ -471,12 +484,13 @@
                     createdAtFirestore: new Date()
                 });
                 
-                mostrarStatus(`🍔 Produto "${nome}" cadastrado com sucesso!`, 'success');
+                const emojiSucesso = emojisPorLoja[comercio] || "✨";
+                mostrarStatus(`${emojiSucesso} Produto "${nome}" cadastrado com sucesso!`, 'success');
+                
                 form.reset();
                 previewArea.style.display = 'none';
                 imgPreview.src = '';
                 
-                // Pequeno destaque animado no botão
                 btnSubmit.innerHTML = originalHtml;
                 setTimeout(() => {
                     btnSubmit.disabled = false;
@@ -494,12 +508,10 @@
             }
         });
         
-        // sugestão de placeholder dinâmico para melhor UX
         const precoInput = document.getElementById('preco');
         precoInput.addEventListener('input', (e) => {
             let val = e.target.value;
             if (val && !isNaN(parseFloat(val))) {
-                // apenas formata visual sem alterar valor bruto
                 if (val.includes('.')) {
                     let partes = val.split('.');
                     if (partes[1] && partes[1].length > 2) {

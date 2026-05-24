@@ -348,11 +348,11 @@
 
     <div class="dashboard-header">
         <div class="title-section">
-            <h1>Cozinha Central</h1>
+            <h1 id="titulo-cozinha">Cozinha Central</h1>
             <div class="subtitle">
                 <span>⚡ fluxo ao vivo</span>
                 <span>•</span>
-                <span>🔄 atualização instantânea</span>
+                <span id="sub-loja">🔄 todos os setores</span>
             </div>
         </div>
         <div class="stats-badge" id="stats-area">
@@ -372,7 +372,7 @@
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-        import { getFirestore, collection, onSnapshot, doc, updateDoc, query, orderBy } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+        import { getFirestore, collection, onSnapshot, doc, updateDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
         const firebaseConfig = {
             apiKey: "AIzaSyBIOTndcpgCqT9YYpEScaDRsqvAPH8p6_Y",
@@ -387,10 +387,24 @@
         const db = getFirestore(app);
         
         const painelDiv = document.getElementById('painel-pedidos');
-        let ultimoSnapshotIds = new Set();     // rastrear IDs ativos
-        let timeoutSom = null;
+        let ultimoSnapshotIds = new Set();     
         
-        // Função para notificação sonora moderna (Web Audio com fallback)
+        // --- FILTRO MULTI-LOJAS PELA URL ---
+        const urlParams = new URLSearchParams(window.location.search);
+        const lojaAtual = urlParams.get('loja') || 'lanches'; // Se não passar nada na URL, assume lanches
+
+        // Atualiza dinamicamente o título do topo conforme o nicho ativo
+        const tituloCozinha = document.getElementById('titulo-cozinha');
+        const subLoja = document.getElementById('sub-loja');
+        if (lojaAtual === 'doces') {
+            tituloCozinha.innerText = "Produção de Doces";
+            subLoja.innerText = "🧁 setor confeitaria";
+        } else {
+            tituloCozinha.innerText = "Cozinha de Lanches";
+            subLoja.innerText = "🍔 setor de chapas e frituras";
+        }
+
+        // Função para notificação sonora moderna (Web Audio)
         function tocarAlarmeNovoPedido() {
             try {
                 const audioContext = new (window.AudioContext || window.webkitAudioContext)();
@@ -406,55 +420,56 @@
                 gain.connect(audioContext.destination);
                 osc.start();
                 osc.stop(now + 0.45);
-                // garante que o contexto seja ativado de forma discreta
                 if (audioContext.state === 'suspended') {
                     audioContext.resume();
                 }
             } catch(e) {
-                // fallback silencioso, sem quebrar experiência
                 console.log("Áudio não suportado");
             }
         }
         
-        // Atualizar contadores da navbar
-        function atualizarContadores(pedidosArray) {
-            const pendentes = pedidosArray.filter(p => p.status === 'pendente').length;
-            const emPreparo = pedidosArray.filter(p => p.status === 'em_preparo').length;
-            const concluidos = pedidosArray.filter(p => p.status === 'concluido').length;
+        // Atualizar contadores da navbar com base exclusivamente no nicho ativo
+        function atualizarContadores(pedidosFiltrados, todosPedidosDoBanco) {
+            const pendentes = pedidosFiltrados.filter(p => p.status === 'pendente').length;
+            const emPreparo = pedidosFiltrados.filter(p => p.status === 'em_preparo').length;
+            
+            // Conta os concluídos do turno para este comércio específico
+            const concluidos = todosPedidosDoBanco.filter(p => p.status === 'concluido' && p.comercio === lojaAtual).length;
+            
             document.getElementById('pendentes-count').innerText = pendentes;
             document.getElementById('preparo-count').innerText = emPreparo;
             document.getElementById('concluidos-count').innerText = concluidos;
         }
         
-        // Escuta em tempo real e aplica filtro somente pendentes + em preparo (cozinha)
+        // Escuta em tempo real a coleção limpa (evita erro de índice no celular)
         const pedidosRef = collection(db, "pedidos");
-        const q = query(pedidosRef, orderBy("criadoEm", "asc"));
         
-        onSnapshot(q, (snapshot) => {
-            // Coletar todos os pedidos e separar apenas pendentes + em preparo (para exibição)
-            let todosPedidos = [];
+        onSnapshot(pedidosRef, (snapshot) => {
+            let todosPedidosDoBanco = [];
             let pedidosAtivosParaFila = [];
             
             snapshot.forEach((docSnap) => {
                 const data = docSnap.data();
                 const pedidoCompleto = { id: docSnap.id, ...data };
-                todosPedidos.push(pedidoCompleto);
-                if (data.status === "pendente" || data.status === "em_preparo") {
+                todosPedidosDoBanco.push(pedidoCompleto);
+                
+                // MUDANÇA CRUCIAL MULTI-LOJAS: Filtra na memória para exibir apenas o nicho correto
+                if (data.comercio === lojaAtual && (data.status === "pendente" || data.status === "em_preparo")) {
                     pedidosAtivosParaFila.push(pedidoCompleto);
                 }
             });
             
-            // Ordenar por criadoEm (timestamp) mais antigo primeiro (fila justa)
+            // Ordenar por criadoEm (timestamp) mais antigo primeiro (fila de prioridade por ordem de chegada)
             pedidosAtivosParaFila.sort((a, b) => {
                 const timeA = a.criadoEm ? a.criadoEm.toMillis?.() || a.criadoEm : 0;
                 const timeB = b.criadoEm ? b.criadoEm.toMillis?.() || b.criadoEm : 0;
                 return timeA - timeB;
             });
             
-            // atualizar estatísticas gerais (mostra inclusive concluídos no badge)
-            atualizarContadores(todosPedidos);
+            // Atualiza contadores numéricos superiores
+            atualizarContadores(pedidosAtivosParaFila, todosPedidosDoBanco);
             
-            // Verificar se surgiu um NOVO pedido pendente que não estava antes
+            // Verificar se surgiu um NOVO pedido pendente específico deste comércio
             const novosIds = new Set(pedidosAtivosParaFila.map(p => p.id));
             let temNovoPedido = false;
             if (ultimoSnapshotIds.size > 0) {
@@ -469,19 +484,17 @@
             }
             ultimoSnapshotIds = novosIds;
             
-            // Se houver novo pedido e estamos em segundo plano (ou ativo) tocar som e destaque
             if (temNovoPedido && pedidosAtivosParaFila.length > 0) {
                 tocarAlarmeNovoPedido();
-                // efeito de pulsar nos cards será aplicado após renderização
             }
             
-            // Renderizar painel
+            // Renderizar painel visual da cozinha
             if (pedidosAtivosParaFila.length === 0) {
                 painelDiv.innerHTML = `
                     <div class="empty-state">
                         <span>🧑‍🍳✨</span>
-                        <p>Cozinha tranquila! Nenhum pedido pendente ou em preparo.</p>
-                        <small style="color:#9bb7cd;">Os novos pedidos aparecerão automaticamente aqui</small>
+                        <p>Fila vazia! Nenhum pedido pendente ou em preparo por aqui.</p>
+                        <small style="color:#9bb7cd;">Os novos pedidos desse setor surgirão automaticamente aqui</small>
                     </div>
                 `;
                 return;
@@ -508,7 +521,6 @@
                 const badgeClass = pedido.status === 'pendente' ? 'badge-pendente' : 'badge-preparo';
                 const statusTexto = pedido.status === 'pendente' ? 'Aguardando cozinha' : 'Em preparo';
                 
-                // itens
                 let itensHTML = '';
                 if (pedido.itens && Array.isArray(pedido.itens)) {
                     pedido.itens.forEach(item => {
@@ -569,21 +581,18 @@
                 painelDiv.appendChild(card);
             });
             
-            // anexar eventos
+            // Anexar cliques de controle de status
             document.querySelectorAll('.btn-status').forEach(btn => {
-                btn.removeEventListener('click', handlerClick);
-                btn.addEventListener('click', handlerClick);
+                btn.onclick = (e) => {
+                    const currentBtn = e.currentTarget;
+                    const idPedido = currentBtn.getAttribute('data-id');
+                    if (currentBtn.classList.contains('btn-preparar')) {
+                        mudarStatusPedido(idPedido, "em_preparo");
+                    } else if (currentBtn.classList.contains('btn-concluir')) {
+                        mudarStatusPedido(idPedido, "concluido");
+                    }
+                };
             });
-            
-            function handlerClick(e) {
-                const btn = e.currentTarget;
-                const idPedido = btn.getAttribute('data-id');
-                if (btn.classList.contains('btn-preparar')) {
-                    mudarStatusPedido(idPedido, "em_preparo");
-                } else if (btn.classList.contains('btn-concluir')) {
-                    mudarStatusPedido(idPedido, "concluido");
-                }
-            }
             
         }, (error) => {
             console.error("Erro no snapshot da cozinha:", error);
@@ -594,7 +603,7 @@
             try {
                 const pedidoRef = doc(db, "pedidos", id);
                 await updateDoc(pedidoRef, { status: novoStatus });
-                // feedback visual sutil no botão
+                
                 const btns = document.querySelectorAll(`.btn-status[data-id="${id}"]`);
                 btns.forEach(btn => {
                     const original = btn.innerHTML;
@@ -607,7 +616,6 @@
                 });
             } catch (error) {
                 console.error("Falha ao atualizar status:", error);
-                // notificação rápida
                 const toast = document.createElement('div');
                 toast.textContent = "Erro ao atualizar pedido. Tente novamente.";
                 toast.style.cssText = "position:fixed; bottom:20px; left:20px; background:#c0392b; color:white; padding:10px 20px; border-radius:40px; z-index:1000; font-weight:500;";
@@ -616,7 +624,6 @@
             }
         }
         
-        // utilitário de segurança XSS
         function escapeHtml(str) {
             if (!str) return '';
             return str.replace(/[&<>]/g, function(m) {
@@ -629,7 +636,6 @@
             });
         }
         
-        // pequeno gesto para ativar contexto de áudio na primeira interação do usuário (para navegadores modernos)
         document.body.addEventListener('click', () => {
             if (window.AudioContext || window.webkitAudioContext) {
                 const ctx = new (window.AudioContext || window.webkitAudioContext)();
