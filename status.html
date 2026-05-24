@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>⏳ Acompanhar Pedido</title>
+    <style>
+        body { font-family: 'Segoe UI', system-ui, sans-serif; background-color: #f7f9fc; margin: 0; padding: 20px; text-align: center; color: #333; }
+        .box-status { max-width: 450px; background: white; margin: 40px auto; padding: 30px; border-radius: 16px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); }
+        .num-pedido { font-size: 12px; color: #999; margin-bottom: 20px; }
+        
+        /* Linha do Tempo Visual */
+        .linha-tempo { display: flex; justify-content: space-between; margin: 30px 0; position: relative; }
+        .linha-tempo::before { content: ''; position: absolute; background: #ddd; height: 4px; width: 100%; top: 50%; transform: translateY(-50%); z-index: 1; }
+        .passo { width: 30px; height: 30px; background: #ddd; border-radius: 50%; z-index: 2; display: flex; align-items: center; justify-content: center; font-weight: bold; color: white; transition: 0.3s; }
+        
+        /* Cores dinâmicas dos estados ativos */
+        .passo.ativo { background-color: #e67e22; box-shadow: 0 0 10px rgba(230, 126, 34, 0.5); }
+        .passo.concluido { background-color: #2ecc71; }
+        
+        #texto-status { font-size: 22px; font-weight: bold; color: #2c3e50; margin: 20px 0; }
+        #animacao-status { font-size: 50px; margin: 10px 0; }
+    </style>
+</head>
+<body>
+
+    <div class="box-status">
+        <h2>🍔 Status do seu Pedido</h2>
+        <div class="num-pedido" id="id-pedido">ID do Pedido: Carregando...</div>
+        
+        <div id="animacao-status">⏳</div>
+        <div id="texto-status">Recebendo pedido...</div>
+
+        <!-- Linha do tempo gráfica -->
+        <div class="linha-tempo">
+            <div class="passo" id="p1">1</div>
+            <div class="passo" id="p2">2</div>
+            <div class="passo" id="p3">3</div>
+        </div>
+        
+        <p style="font-size: 14px; color: #666;">Fique de olho nessa tela, ela atualiza sozinha conforme seu pedido avança!</p>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+        import { getFirestore, doc, onSnapshot } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyBIOTndcpgCqT9YYpEScaDRsqvAPH8p6_Y",
+            authDomain: "cardapio-digital-d87ae.firebaseapp.com",
+            projectId: "cardapio-digital-d87ae",
+            storageBucket: "cardapio-digital-d87ae.firebasestorage.app",
+            messagingSenderId: "26239101821",
+            appId: "1:26239101821:web:66e67a40d74db4beeeba14"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+
+        // Pega o ID do pedido direto da URL do navegador do cliente
+        const parametros = new URLSearchParams(window.location.search);
+        const idPedido = parametros.get('id');
+
+        if (idPedido) {
+            document.getElementById('id-pedido').innerText = `Pedido nº: ${idPedido.slice(-6)}`; // Mostra só os 6 últimos caracteres para ficar amigável
+            
+            // Fica vigiando unicamente esse pedido do cliente em tempo real
+            onSnapshot(doc(db, "pedidos", idPedido), (docSnap) => {
+                if (!docSnap.exists()) {
+                    document.getElementById('texto-status').innerText = "Pedido não encontrado.";
+                    return;
+                }
+
+                const dados = docSnap.data();
+                atualizarTelaStatus(dados.status);
+            });
+        }
+
+        function atualizarTelaStatus(status) {
+            const txt = document.getElementById('texto-status');
+            const anime = document.getElementById('animacao-status');
+            const p1 = document.getElementById('p1');
+            const p2 = document.getElementById('p2');
+            const p3 = document.getElementById('p3');
+
+            // Reseta classes
+            p1.className = p2.className = p3.className = "passo";
+
+            if (status === "pendente") {
+                txt.innerText = "Recebido! Aguardando Cozinha...";
+                anime.innerText = "📥";
+                p1.className = "passo ativo";
+            } else if (status === "em_preparo") {
+                txt.innerText = "Seu pedido está sendo preparado!";
+                anime.innerText = "👨‍🍳";
+                p1.className = "passo concluido";
+                p2.className = "passo ativo";
+            } else if (status === "concluido") {
+                txt.innerText = "Pedido Pronto! Bom Apetite!";
+                anime.innerText = "🥳🍔";
+                p1.className = "passo concluido";
+                p2.className = "passo concluido";
+                p3.className = "passo concluido ativo";
+            }
+        }
+    </script>
+</body>
+</html>
